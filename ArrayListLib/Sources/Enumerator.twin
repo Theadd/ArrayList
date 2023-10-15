@@ -1,0 +1,128 @@
+[ InterfaceId ("00020404-0000-0000-C000-000000000046") ]
+Private Interface IEnumVARIANT Extends stdole.IUnknown
+    Sub Next(ByVal celt As Long, ByRef rgvar As Variant, ByRef pceltFetched As Long)
+    Sub Skip(ByVal celt As Long)
+    Sub Reset()
+    Sub Clone(ByRef ppenum As IEnumVARIANT)
+End Interface
+
+[ InterfaceId ("8E42D737-24C2-4D3F-8903-4B30E9383C69") ]
+[ COMExtensible (True) ]
+Public Interface IEnumerator Extends IEnumVARIANT
+    Property Get CurrentIndex() As Long
+    Property Let CurrentIndex(Value As Long)
+    Property Get CurrentStep() As Long
+    Property Let CurrentStep(Value As Long)
+    Property Get CurrentSize() As Long
+    Property Let CurrentSize(Value As Long)
+End Interface
+
+[ ClassId ("D7EC9292-8200-4A47-ACDA-CA78217CF881") ]
+Public Class Enumerator
+    Implements IEnumerator
+
+    Private CIndex As Long
+    Private MaxValue As Long
+    Private Items() As Variant
+    Private CStep As Long
+    Private NStep As Long
+    Private Const E_INVALIDARGS As Long = &H80070057
+    Private Const S_OK As Long = 0
+    Private Const S_FALSE As Long = 1
+    
+    [ Description ("The Index of the current item being enumerated. If you manually change it, the next item being enumerated will be the one at the specified index.") ]
+    Public Property Get CurrentIndex() As Long Implements IEnumerator.CurrentIndex: CurrentIndex = CIndex: End Property
+    	
+    Public Property Let CurrentIndex(Value As Long) Implements IEnumerator.CurrentIndex: CIndex = Value: NStep = 0: End Property
+    
+    [ Description ("Allows to change the iteration steps count and it's direction.") ]
+    Public Property Get CurrentStep() As Long Implements IEnumerator.CurrentStep: CurrentStep = CStep: End Property
+    	
+    Public Property Let CurrentStep(Value As Long) Implements IEnumerator.CurrentStep: CStep = Value: NStep = CStep: End Property
+    
+    [ Description ("It's the size of the list, array, or section of it, which is being enumerated. Use with caution and only when enumerating a section of a bigger collection. This won't check for out of bounds.") ]
+    Public Property Get CurrentSize() As Long Implements IEnumerator.CurrentSize: CurrentSize = MaxValue: End Property
+    	
+    Public Property Let CurrentSize(Value As Long) Implements IEnumerator.CurrentSize
+        MaxValue = Value
+        MemLong(ArrPtr(Items) + SAFEARRAY_CELEMENTS_OFFSET) = Value
+    End Property
+    
+    Public Sub New()
+        Items = Array()
+        MaxValue = -1
+        CStep = 1
+    End Sub
+    
+    Public Sub New(ByRef TargetArray() As Variant, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional ByVal GetStep As Long = 1, Optional ByRef ThisEnumerator As IEnumerator)
+        If IsMissing(GetCount) Then GetCount = 1 + UBound(TargetArray) - Index
+        Bind TargetArray, Index, GetCount, GetStep
+        Set ThisEnumerator = Me
+    End Sub
+    
+    Public Sub Bind(ByRef TargetArray() As Variant, ByVal Index As Long, ByVal GetCount As Long, ByVal GetStep As Long)
+        Static sa As SAFEARRAY_1D
+        With sa
+            .cDims = 1
+            .cbElements = VARIANT_SIZE
+            .fFeatures = FADF_VARIANT Or FADF_AUTO
+            .cLocks = 10
+            .pvData = VarPtr(TargetArray(Index))
+            .rgsabound0.cElements = GetCount
+        End With
+        MemLongPtr(VarPtrArr(Items)) = VarPtr(sa)
+        CStep = GetStep
+        MaxValue = GetCount
+        If CStep < 0 Then CIndex = GetCount - 1
+    End Sub
+
+    /* [ CompilerOptions ("+llvm,+optimize") ] */
+    [ ArrayBoundsChecks (False) ]
+    [ IntegerOverflowChecks (False) ]
+    Private Sub Next(ByVal celt As Long, ByRef rgvar As Variant, ByRef pceltFetched As Long) Implements IEnumerator.Next
+        If VarPtr(rgvar) = 0 Or celt <> 1 Then
+            Err.ReturnHResult = E_INVALIDARGS
+        Else
+        	CIndex += NStep
+            If CIndex < MaxValue And CIndex >= 0 Then
+                Assign rgvar, Items(CIndex)
+                NStep = CStep
+                If VarPtr(pceltFetched) <> 0 Then pceltFetched = 1
+                Err.ReturnHResult = S_OK
+            Else
+                If VarPtr(pceltFetched) <> 0 Then pceltFetched = 0
+                Err.ReturnHResult = S_FALSE
+            End If
+        End If
+    End Sub
+
+    Private Sub Skip(ByVal celt As Long) Implements IEnumerator.Skip
+        CIndex += celt * CStep
+        If CIndex > MaxValue Then
+            CIndex = MaxValue + 1
+        ElseIf CIndex < 0 Then
+            CIndex = -1
+        End If
+    End Sub
+
+    Private Sub Reset() Implements IEnumerator.Reset
+        CIndex = If(CStep < 0, MaxValue - 1, 0)
+    End Sub
+
+    Private Sub Clone(ByRef ppenum As IEnumVARIANT) Implements IEnumerator.Clone
+        Set ppenum = New Enumerator(Items, 0, MaxValue, CStep)
+    End Sub
+
+    /* [ CompilerOptions ("+llvm,+optimize") ] */
+    [ ArrayBoundsChecks (False) ]
+    [ IntegerOverflowChecks (False) ]
+    Private Sub Assign(ByRef Target As Variant, ByRef Value As Variant)
+        If IsObject(Value) Then Set Target = Value Else Target = Value
+    End Sub
+    
+    Private Sub Class_Terminate()
+        On Error Resume Next
+        If MaxValue >= 0 Then MemLongPtr(VarPtrArr(Items)) = vbNullPtr
+        On Error GoTo 0
+    End Sub
+End Class

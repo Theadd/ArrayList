@@ -1,0 +1,498 @@
+
+[ ClassId ("E88D5510-C8E5-433D-8DA5-712D8586E0C9") ]
+[ COMCreatable (True) ]
+Public Class ArrayList
+    Implements IArrayList
+    
+    Private pItems() As Variant
+    Private pIndex As Long
+    Private pVersion As Long
+    
+    [ DefaultMember ]
+    Public Property Get Item(ByVal Index As Long) As Variant Implements IArrayList.Item
+        If Index < 0 Or Index >= pIndex Then Err.Raise 9
+        Return pItems(Index)
+    End Property
+    
+    Public Property Let Item(ByVal Index As Long, Value As Variant) Implements IArrayList.Item
+        If Index < 0 Or Index >= pIndex Then Err.Raise 9
+        pItems(Index) = Value
+        pVersion += 1
+    End Property
+    
+    Public Property Set Item(ByVal Index As Long, Value As Variant) Implements IArrayList.Item
+        If Index < 0 Or Index >= pIndex Then Err.Raise 9
+        Set pItems(Index) = Value
+        pVersion += 1
+    End Property
+    
+    Public Property Get Count() As Long Implements IArrayList.Count: Return pIndex: End Property
+    	
+    Public Property Get Version() As Long Implements IArrayList.Version: Return pVersion: End Property
+    	
+    Public Property Get Capacity() As Long Implements IArrayList.Capacity: Return UBound(pItems) + 1: End Property
+    	
+    Public Property Let Capacity(Value As Long) Implements IArrayList.Capacity: ReDim Preserve pItems(0 To Value - 1): End Property
+    [ Hidden ]
+    Public Property Get IsFixedSize() As Boolean Implements IArrayList.IsFixedSize: Return False: End Property
+    [ Hidden ]
+    Public Property Get IsReadOnly() As Boolean Implements IArrayList.IsReadOnly: Return False: End Property
+    [ Hidden ]
+    Public Property Get IsSynchronized() As Boolean Implements IArrayList.IsSynchronized: Return False: End Property
+    [ Hidden ]
+    Public Property Get SyncRoot() As Variant Implements IArrayList.SyncRoot: Return Nothing: End Property
+    
+    Public Function Items() As Variant() Implements IArrayList.Items
+        Static sa As SAFEARRAY_1D
+        With sa
+            .cDims = 1
+            .cbElements = VARIANT_SIZE
+            .fFeatures = FADF_VARIANT Or FADF_AUTO
+            .cLocks = 10
+            .pvData = VarPtr(pItems(0))
+            .rgsabound0.cElements = pIndex
+        End With
+        MemLongPtr(VarPtrArr(Items)) = VarPtr(sa)
+    End Function
+    
+    [ Description ("Adds an item to the list. The return value is the position the new element was inserted in.") ]
+    Public Function Add(Value As Variant) As Long Implements IArrayList.Add
+        If pIndex > UBound(pItems) Then GrowCapacity 1
+        If IsObject(Value) Then Set pItems(pIndex) = Value Else pItems(pIndex) = Value
+        Add = pIndex
+        pIndex += 1
+        pVersion += 1
+    End Function
+    
+    [ Description ("Removes all items from the list.") ]
+    Public Sub Clear() Implements IArrayList.Clear
+        Erase pItems
+        ReDim pItems(0 To 1)
+        pIndex = 0
+        pVersion += 1
+    End Sub
+    
+    [ Description ("Creates a shallow copy of this ArrayList.") ]
+    Public Function Clone() As Variant Implements IArrayList.Clone
+        Dim Target As New ArrayList
+        C2IArrayList(Target).CloneTo Target, C2IArrayList(Me), 0, pIndex
+        Return Target
+    End Function
+    
+    [ Description ("Returns whether the list contains a particular item.") ]
+    Public Function Contains(Value As Variant) As Boolean Implements IArrayList.Contains
+        Dim i As Long, vt As VbVarType = VarType(Value)
+        Select Case vt
+            Case vbNull
+                For i = 0 To pIndex - 1
+                    If IsNull(pItems(i)) Then Return True
+                Next i
+            Case vbObject
+                For i = 0 To pIndex - 1
+                    If VarType(pItems(i)) = vt AndAlso ObjPtr(pItems(i)) = ObjPtr(Value) Then Return True
+                Next i
+            Case Else
+                For i = 0 To pIndex - 1
+                    If VarType(pItems(i)) = vt AndAlso pItems(i) = Value Then Return True
+                Next i
+        End Select
+    End Function
+    
+    [ Description ("Copies this ArrayList to another array at specified index, the other array must be of a compatible array type but not necessarily the same type. It also accepts other lists implementing IListRange as target.") ]
+    Public Sub CopyTo(Target As Variant, Index As Long) Implements IArrayList.CopyTo
+        Select Case VarType(Target)
+            Case vbObject
+                If TypeOf Target Is IListRange Then
+                    C2IListRange(Target).SetRange Index, Me
+                Else
+                	Err.Raise 13
+                End If
+            Case vbArray + vbVariant
+                If Index < 0 Or Index > UBound(Target) Then Err.Raise 9
+                If UBound(Target) - Index < pIndex Then Err.Raise 6
+                VariantArrayClone VarPtr(Target(Index)), VarPtr(pItems(0)), pIndex
+            Case Else
+                If Not IsArray(Target) Then Err.Raise 13
+                If Index < 0 Or Index > UBound(Target) Then Err.Raise 9
+                If UBound(Target) - Index < pIndex Then Err.Raise 6
+                Dim i As Long
+                For i = 0 To pIndex - 1
+                    Assign Target(Index + i), pItems(i)
+                Next i
+        End Select
+    End Sub
+    
+    [ Enumerator ]
+    Public Function GetEnumerator(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional ByVal GetStep As Long = 1, Optional ByRef ThisEnumerator As IEnumerator) As stdole.IUnknown Implements IArrayList.GetEnumerator
+        If IsMissing(GetCount) Then GetCount = pIndex - Index
+        Return New Enumerator(pItems, Index, GetCount, GetStep, ThisEnumerator)
+    End Function
+
+    [ Description ("Returns the index of a particular item. Returns -1 if the item isn't in the list.") ]
+    Public Function IndexOf(Value As Variant, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant) As Long Implements IArrayList.IndexOf
+        If IsMissing(GetCount) Then GetCount = pIndex - Index
+        If Index > pIndex Or GetCount < 0 Or Index > pIndex - GetCount Then Err.Raise 9
+        GetCount = Index + GetCount - 1
+        If pIndex = 0 Then Return -1
+        Dim i As Long, vt As VbVarType = VarType(Value)
+        Select Case vt
+            Case vbNull
+                For i = Index To GetCount
+                    If IsNull(pItems(i)) Then Return i
+                Next i
+            Case vbObject
+                For i = Index To GetCount
+                    If VarType(pItems(i)) = vt AndAlso ObjPtr(pItems(i)) = ObjPtr(Value) Then Return i
+                Next i
+            Case Else
+                For i = Index To GetCount
+                    If VarType(pItems(i)) = vt AndAlso pItems(i) = Value Then Return i
+                Next i
+        End Select
+        Return -1
+    End Function
+
+    [ Description ("Returns the last index of a particular item. Returns -1 if the item isn't in the list.") ]
+    Public Function LastIndexOf(ByRef Value As Variant, Optional ByVal Index As Variant, Optional ByVal GetCount As Variant) As Long Implements IArrayList.LastIndexOf
+        If IsMissing(Index) Then Index = pIndex - 1
+        If IsMissing(GetCount) Then GetCount = Index + 1
+        If Index >= pIndex Or GetCount > Index + 1 Then Err.Raise 9
+        GetCount = Index - (GetCount - 1)
+        If pIndex = 0 Then Return -1
+        Dim i As Long, vt As VbVarType = VarType(Value)
+        Select Case vt
+            Case vbNull
+                For i = Index To GetCount Step -1
+                    If IsNull(pItems(i)) Then Return i
+                Next i
+            Case vbObject
+                For i = Index To GetCount Step -1
+                    If VarType(pItems(i)) = vt AndAlso ObjPtr(pItems(i)) = ObjPtr(Value) Then Return i
+                Next i
+            Case Else
+                For i = Index To GetCount Step -1
+                    If VarType(pItems(i)) = vt AndAlso pItems(i) = Value Then Return i
+                Next i
+        End Select
+        Return -1
+    End Function
+
+    [ Description ("Inserts value into the list at position Index. Index must be non-negative and less than or equal to the number of elements in the list. If Index equals the number of items in the list, then value is appended to the end.") ]
+    Public Sub Insert(ByVal Index As Long, Value As Variant) Implements IArrayList.Insert
+        ReserveSpaceForInsert Index, 1
+        If IsObject(Value) Then Set pItems(Index) = Value Else pItems(Index) = Value
+        pIndex += 1
+        pVersion += 1
+    End Sub
+    
+    [ Description ("Removes an item from the list.") ]
+    Public Sub Remove(Value As Variant) Implements IArrayList.Remove
+        Dim Index As Long = IndexOf(Value)
+        If Index >= 0 Then RemoveAt Index
+    End Sub
+    
+    [ Description ("Removes the item at Index position.") ]
+    Public Sub RemoveAt(ByVal Index As Long) Implements IArrayList.RemoveAt
+        If Index < 0 Or Index >= pIndex Then Err.Raise 9
+        pItems(Index) = Empty
+        If Index < pIndex - 1 Then CopyMemory ByVal VarPtr(pItems(Index)), ByVal VarPtr(pItems(Index + 1)), (pIndex - Index - 1) * VARIANT_SIZE
+        MemInt(VarPtr(pItems(pIndex - 1))) = vbEmpty
+        pIndex -= 1
+        pVersion += 1
+    End Sub
+    
+    Public Sub RemoveRange(ByVal Index As Long, ByVal GetCount As Long) Implements IArrayList.RemoveRange
+        Dim i As Long
+        If Index < 0 Or GetCount < 0 Or (pIndex - Index < GetCount) Then Err.Raise 9
+        For i = 0 To GetCount - 1
+            pItems(Index + i) = Empty
+        Next i
+        If Index < pIndex - 1 Then CopyMemory ByVal VarPtr(pItems(Index)), ByVal VarPtr(pItems(Index + GetCount)), (pIndex - Index - GetCount) * VARIANT_SIZE
+        ZeroMemory VarPtr(pItems(pIndex - GetCount)), GetCount * VARIANT_SIZE
+        pIndex -= GetCount
+        pVersion += 1
+    End Sub
+     
+    Public Sub Reverse(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant) Implements IArrayList.Reverse
+        If IsMissing(GetCount) Then GetCount = pIndex - Index
+        If Index < 0 Or GetCount < 0 Or (pIndex - Index < GetCount) Then Err.Raise 9
+        Dim i As Long, iMax As Long = GetCount \ 2
+        For i = 0 To iMax
+            Swap pItems(Index + i), pItems(Index + (GetCount - 1) - i)
+        Next i
+        pVersion += 1
+    End Sub
+        
+    Public Function ToArray() As Variant() Implements IArrayList.ToArray
+        Dim t() As Variant
+        If pIndex = 0 Then Return Array()
+        ReDim t(0 To pIndex - 1)
+        VariantArrayClone VarPtr(t(0)), VarPtr(pItems(0)), pIndex
+        ReassignArrayTo ToArray, t
+    End Function
+    
+    Public Sub AddRange(Target As Variant) Implements IArrayList.AddRange
+        InsertRange pIndex, Target
+    End Sub
+    
+    Public Sub InsertRange(ByVal Index As Long, Target As Variant) Implements IArrayList.InsertRange
+        Dim v As Variant, GetCount As Long
+        Select Case VarType(Target)
+        	Case vbArray + vbVariant
+                GetCount = (UBound(Target) - LBound(Target)) + 1
+                ReserveSpaceForInsert Index, GetCount
+                VariantArrayClone VarPtr(pItems(Index)), VarPtr(Target(LBound(Target))), GetCount
+                pIndex += GetCount
+                pVersion += 1
+                Exit Sub
+            Case vbObject
+                GetCount = Target.Count
+                If TypeOf Target Is IListRange Then
+                    InsertListTo Index, GetCount, Target
+                    pIndex += GetCount
+                    pVersion += 1
+                    Exit Sub
+                End If
+            Case Else
+                If Not IsArray(Target) Then Err.Raise 13
+                GetCount = (UBound(Target) - LBound(Target)) + 1
+        End Select
+        ReserveSpaceForInsert Index, GetCount
+        For Each v In Target
+            If IsObject(v) Then Set pItems(Index) = v Else pItems(Index) = v
+            Index += 1
+        Next v
+        pIndex += GetCount
+        pVersion += 1
+    End Sub
+    
+    Public Function GetRange(ByVal Index As Long, ByVal GetCount As Long) As IListRange Implements IArrayList.GetRange
+        If Index < 0 Or GetCount < 0 Or pIndex - Index < GetCount Then Err.Raise 9
+        Return New ListRange(Me, Index, GetCount)
+    End Function
+    
+    Public Sub SetRange(ByVal Index As Long, Target As Variant) Implements IArrayList.SetRange
+        Dim v As Variant, GetCount As Long
+        Select Case VarType(Target)
+            Case vbArray + vbVariant
+                GetCount = (UBound(Target) - LBound(Target)) + 1
+                If Index < 0 Or Index > pIndex - GetCount Then Err.Raise 9
+                VariantArrayClone VarPtr(pItems(Index)), VarPtr(Target(LBound(Target))), GetCount
+                pVersion += 1
+                Exit Sub
+            Case vbObject
+                GetCount = Target.Count
+                If Index < 0 Or Index > pIndex - GetCount Then Err.Raise 9
+                If TypeOf Target Is IListRange Then
+                    VariantArrayClone VarPtr(pItems(Index)), Target.GetAddressOfItemAt(0), GetCount
+                    pVersion += 1
+                End If
+            Case Else
+                If Not IsArray(Target) Then Err.Raise 13
+                GetCount = (UBound(Target) - LBound(Target)) + 1
+                If Index < 0 Or Index > pIndex - GetCount Then Err.Raise 9
+        End Select
+        For Each v In Target
+            If IsObject(v) Then Set pItems(Index) = v Else pItems(Index) = v
+            Index += 1
+        Next v
+        pVersion += 1
+    End Sub
+    
+    Public Sub Sort(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional Comparer As IComparer = Nothing) Implements IArrayList.Sort
+        If IsMissing(GetCount) Then GetCount = pIndex - Index
+        If Comparer IsNot Nothing Then
+            QuickSort Index, Index + GetCount - 1, Comparer
+        Else
+            QuickSortV2 Index, Index + GetCount - 1
+        End If
+        pVersion += 1
+    End Sub
+    
+    [ Description ("Searches a section of a sorted list. Returns the index of the given value in the list. If not found, returns a negative integer. Use the bitwise operator (Not) to get the index of the first element larger than this one, if any.") ]
+    Public Function BinarySearch(ByVal Index As Long, ByVal GetCount As Long, Value As Variant, Optional ByRef Comparer As IComparer = Nothing) As Long Implements IArrayList.BinarySearch
+        Dim lo As Long, hi As Long, i As Long
+        lo = Index
+        hi = Index + GetCount - 1
+        If Comparer IsNot Nothing Then
+            Do While (lo <= hi)
+                i = lo + ((hi - lo) \ 2)
+                Select Case Comparer.Compare(pItems(i), Value)
+                    Case 0: Return i
+                    Case Is < 0: lo = i + 1
+                    Case Else: hi = i - 1
+                End Select
+            Loop
+        Else
+            Do While (lo <= hi)
+                i = lo + ((hi - lo) \ 2)
+                Select Case pItems(i)
+                    Case Value: Return i
+                    Case Is < Value: lo = i + 1
+                    Case Else: hi = i - 1
+                End Select
+            Loop
+        End If
+        Return Not lo
+    End Function
+    
+    #Region "HIDDEN METHODS IN MSCORLIB"
+    [ Hidden ]
+    Public Function IndexOf_2(ByRef Value As Variant, ByVal Index As Long, ByVal GetCount As Long) As Long: Return IndexOf(Value, Index, GetCount): End Function
+    [ Hidden ]
+    Public Function IndexOf_3(ByRef Value As Variant) As Long: Return IndexOf(Value, 0): End Function
+    [ Hidden ]
+    Public Sub Sort_2(ByRef Comparer As IComparer): Sort 0, , Comparer: End Sub
+    [ Hidden ]
+    Public Function BinarySearch_2(ByRef Value As Variant) As Long: Return BinarySearch(0, pIndex, Value): End Function
+    [ Hidden ]
+    Public Function BinarySearch_3(ByRef Value As Variant, ByRef Comparer As IComparer) As Long: Return BinarySearch(0, pIndex, Value, Comparer): End Function
+    [ Hidden ]
+    Public Function LastIndexOf_2(ByRef Value As Variant, ByVal Index As Long) As Long: Return LastIndexOf(Value, Index, Index + 1): End Function
+    [ Hidden ]
+    Public Function LastIndexOf_3(ByRef Value As Variant, ByVal Index As Long, ByVal GetCount As Long) As Long: Return LastIndexOf(Value, Index, GetCount): End Function
+    #End Region
+    
+    #Region "PRIVATE METHODS"
+    Private Sub Class_Initialize()
+        ReDim pItems(0 To 1)
+    End Sub
+    
+    Private Sub Class_Terminate()
+        On Error Resume Next
+        DoEvents
+        Erase pItems
+        On Error GoTo 0
+    End Sub
+    
+    Private Function C2IArrayList(Value As Variant) As IArrayList: Return Value: End Function
+    	
+    Private Function C2IListRange(Value As Variant) As IListRange: Return Value: End Function
+    
+    Private Function GetAddressOfItemAt(Index As Long) As LongPtr Implements IArrayList.GetAddressOfItemAt: Return VarPtr(pItems(Index)): End Function
+    
+    /* [ CompilerOptions ("+llvm,+optimize") ] */
+    [ ArrayBoundsChecks (False) ]
+    [ IntegerOverflowChecks (False) ]
+    Private Sub Swap(ByRef A As Variant, ByRef B As Variant)
+        Dim v As Variant
+        If IsObject(A) Then Set v = A Else v = A
+        If IsObject(B) Then Set A = B Else A = B
+        If IsObject(v) Then Set B = v Else B = v
+    End Sub
+
+    /* [ CompilerOptions ("+llvm,+optimize") ] */
+    [ ArrayBoundsChecks (False) ]
+    [ IntegerOverflowChecks (False) ]
+    Private Sub Assign(ByRef Target As Variant, ByRef Value As Variant)
+        If IsObject(Value) Then Set Target = Value Else Target = Value
+    End Sub
+    
+    Private Sub GrowCapacity(ByVal Increment As Long)
+        If pIndex + Increment > UBound(pItems) Then
+            If (UBound(pItems) * 2) + 2 >= pIndex + Increment Then
+                ReDim Preserve pItems(0 To (UBound(pItems) * 2) + 2)
+            Else
+                ReDim Preserve pItems(0 To pIndex + Increment)
+            End If
+        End If
+    End Sub
+    
+    Private Sub ReserveSpaceForInsert(ByVal Index As Long, ByVal GetCount As Long)
+        If pIndex + GetCount >= UBound(pItems) Then GrowCapacity GetCount
+        CopyMemory ByVal VarPtr(pItems(Index + GetCount)), ByVal VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
+        If GetCount = 1 Then
+            MemInt(VarPtr(pItems(Index))) = vbEmpty
+        Else
+            ZeroMemory VarPtr(pItems(Index)), GetCount * VARIANT_SIZE
+        End If
+    End Sub
+
+    Private Function IsContainedInMemoryRange(TargetList As IListRange, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant) As Boolean
+        If IsMissing(GetCount) Then GetCount = pIndex - Index
+        If GetCount = 0 Then Return False
+        Return (TargetList.GetAddressOfItemAt(0) <= VarPtr(pItems(Index + GetCount - 1)) _
+                And TargetList.GetAddressOfItemAt(TargetList.Count - 1) >= VarPtr(pItems(Index)))
+    End Function
+
+    Private Sub InsertListTo(ByVal Index As Long, ByVal GetCount As Long, ByVal Target As IListRange)
+        Dim pv0 As LongPtr, pv0base As LongPtr, pvIdx As LongPtr, t() As Variant, isContained As Boolean
+        If GetCount > 0 Then
+            pv0 = Target.GetAddressOfItemAt(0)
+            pv0base = VarPtr(pItems(0))
+            If IsContainedInMemoryRange(Target, Index) Then
+                t = Target.ToArray()
+                pv0 = VarPtr(t(0))
+            Else
+                isContained = IsContainedInMemoryRange(Target)
+            End If
+            GrowCapacity GetCount
+            If Index < pIndex Then
+                ' Move memory `Target.Count` positions to the right, from `Index` position, due to memory overlapping,
+                ' it is done using a separate memory region as helper.
+                If CreateMemoryCopy(pvIdx, VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE) Then
+                    ' SafeArrayCopyData releases any resources in destination array and those, if present, are
+                    ' just copied to the right without increasing reference count so, we clear it beforehand to prevent 
+                    ' SafeArrayCopyData to release those resources.
+                    ZeroMemory VarPtr(pItems(Index)), GetCount * VARIANT_SIZE
+                    ' Copy back the elements from the temporal memory region to it's final position within the list.
+                    CopyMemory ByVal VarPtr(pItems(Index + GetCount)), ByVal pvIdx, (pIndex - Index) * VARIANT_SIZE
+                    FreeMemoryCopy pvIdx
+                Else
+                    Err.Raise 7
+                End If
+            End If
+            If VarPtr(pItems(0)) <> pv0base And isContained Then
+                ' When `Target` derived from an array range contained within this list and, due to `Redim Preserve` from 
+                ' `GrowCapacity` above, the array gets reallocated to a different memory region, we've to update the pointer.
+                pv0 = VarPtr(pItems(0)) + (pv0 - pv0base)
+            End If
+            ' Finally, insert (copy) all items in `Target` list to the region we just cleared for them.
+            VariantArrayClone VarPtr(pItems(Index)), pv0, GetCount
+        End If
+    End Sub
+
+    Private Sub QuickSort(l As Long, r As Long, ByRef Comparer As IComparer)
+        Dim p As Variant, l0 As Long, r0 As Long
+        l0 = l: r0 = r
+        Assign p, pItems((l + r) \ 2)
+        Do While (l0 <= r0)
+            Comparer.Compare pItems(l0), p
+            Do While (Comparer.Compare(pItems(l0), p) < 0 And l0 < r): l0 += 1: Loop
+            Do While (Comparer.Compare(p, pItems(r0)) < 0 And r0 > l): r0 -= 1: Loop
+            If (l0 <= r0) Then
+                Swap pItems(l0), pItems(r0)
+                l0 += 1
+                r0 -= 1
+            End If
+        Loop
+        If (l < r0) Then QuickSort l, r0, Comparer
+        If (l0 < r) Then QuickSort l0, r, Comparer
+    End Sub
+
+    Private Sub QuickSortV2(l As Long, r As Long)
+        Dim p As Variant, l0 As Long, r0 As Long
+        l0 = l: r0 = r
+        Assign p, pItems((l + r) \ 2)
+        Do While (l0 <= r0)
+            Do While (pItems(l0) < p And l0 < r): l0 += 1: Loop
+            Do While (p < pItems(r0) And r0 > l): r0 -= 1: Loop
+            If (l0 <= r0) Then
+                Swap pItems(l0), pItems(r0)
+                l0 += 1
+                r0 -= 1
+            End If
+        Loop
+        If (l < r0) Then QuickSortV2 l, r0
+        If (l0 < r) Then QuickSortV2 l0, r
+    End Sub
+    
+    Private Sub CloneTo(ByVal Target As IArrayList, Source As IArrayList, ByVal Index As Long, ByVal GetCount As Long) Implements IArrayList.CloneTo
+        pVersion = Source.Version
+        Capacity = GetCount
+        VariantArrayClone VarPtr(pItems(0)), Source.GetAddressOfItemAt(Index), GetCount
+        pIndex = GetCount
+    End Sub
+    #End Region
+
+End Class

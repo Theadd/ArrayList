@@ -1,0 +1,38 @@
+[ InterfaceId ("D60ABA2A-1176-4515-9B4C-B0312BA5FE7F") ]
+Public Interface IComparer
+    Function Compare(X As Variant, Y As Variant) As Long
+End Interface
+
+[ ClassId ("65B491CB-89D6-44D4-91EC-A29A6EAC9A9C") ]
+[ PredeclaredId ]
+Public Class Comparer
+    Implements IComparer
+    
+    Public Function Compare(X As Variant, Y As Variant) As Long Implements IComparer.Compare
+        On Error GoTo Fallback
+        Return Math.Sgn(X - Y)
+    Fallback:
+        On Error GoTo FallbackFail
+        If Not IsObject(X) Then
+            If Not (IsArray(X) Or IsArray(Y)) Then
+                Select Case X
+                    Case Is < Y: Return -1
+                    Case Is > Y: Return 1
+                    Case Else: Return 0
+                End Select
+            Else
+            	Dim bX As Variant = If(IsArray(X), X(0), X)
+                Dim bY As Variant = If(IsArray(Y), Y(0), Y)
+                Select Case bX
+                    Case Is < bY: Return -1
+                    Case Is > bY: Return 1
+                    Case Else: Return 0
+                End Select
+            End If
+        Else
+            Return X.CompareTo(Y)
+        End If
+    FallbackFail:
+        On Error GoTo 0
+    End Function
+End Class
