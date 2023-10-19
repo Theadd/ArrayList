@@ -26,7 +26,7 @@
 	"project.settingsVersion": 1,
 	"project.useProjectIdForTypeLibraryId": true,
 	"project.versionAutoIncrement": "Build",
-	"project.versionBuild": 41,
+	"project.versionBuild": 49,
 	"project.versionMajor": 1,
 	"project.versionMinor": 1,
 	"project.versionProductName": "ArrayList",

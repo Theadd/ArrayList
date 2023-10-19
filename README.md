@@ -10,7 +10,7 @@ Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid
 * __Drop-in replacement__ - Is expected to provide the exact same functionality as `mscorlib.ArrayList` in order to easily replace it.
 * Unlike `mscorlib.ArrayList`, seamlessly accepts `VBA Array`s or any other enumerable type as parameter.
 * Provides an advanced `Enumerator` allowing the use of `For Each` within subranges, backwards enumeration, custom iteration steps and direct access to the backing enumerator instance allowing an even wider set of possibilities while iterating the `Enumerator`.
-* The [`Enumerator`](https://github.com/Theadd/ArrayList/blob/main/ArrayListLib/Sources/Enumerator.twin#L21) class is publicly accessible so you can reuse it anywhere else in your code.
+* The [`Enumerator`](https://github.com/Theadd/ArrayList/blob/main/ArrayListLib/Sources/Enumerator.twin#L21) class is publicly accessible ~~so you can reuse it anywhere else in your code~~ (not yet).
 
 
 ## **Performance Comparison**

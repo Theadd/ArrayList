@@ -400,6 +400,7 @@ Public Class ArrayList
     
     Private Sub ReserveSpaceForInsert(ByVal Index As Long, ByVal GetCount As Long)
         If pIndex + GetCount >= UBound(pItems) Then GrowCapacity GetCount
+        ' MemCopy VarPtr(pItems(Index + GetCount)), VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
         CopyMemory ByVal VarPtr(pItems(Index + GetCount)), ByVal VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
         If GetCount = 1 Then
             MemInt(VarPtr(pItems(Index))) = vbEmpty
