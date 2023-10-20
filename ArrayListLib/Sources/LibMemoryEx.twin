@@ -1,5 +1,6 @@
 Public Module LibMemoryEx
 
+    Private DeclareWide PtrSafe Sub RtlMoveMemory Lib "kernel32" (ByVal lpDest As LongPtr, ByVal lpSource As LongPtr, ByVal Size As LongPtr)
     Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (Destination As Any, ByVal Length As Long, ByVal Fill As Byte)
     Private Declare PtrSafe Function SafeArrayCopyData Lib "oleaut32" (ByRef psaSource As Any, ByRef psaTarget As Any) As Long
 
@@ -65,4 +66,61 @@ Public Module LibMemoryEx
             .rgsabound0.cElements = 0
         End With
     End Sub
+    
+    Type UDTStringPointer
+        Value As String
+    End Type
+
+    Private Sub LSetByVal(ByRef Target As UDTStringPointer, ByVal Value As String)
+        LSet Target.Value = Value
+    End Sub
+    
+    ' CopyMemory (Win32/Forward-only) using BSTR/LSet
+    Private Sub MemMoveBSTR(ByRef Target As LongPtr, ByRef Source As LongPtr, ByVal ByteCount As Long)
+        Dim lbs0 As Long, lbs1 As Long, src As String
+        VBA.GetMem4 Source, lbs0
+        VBA.GetMem4 Target, lbs1
+        VBA.PutMem4 Source, ByteCount - 4
+        VBA.PutMem4 Target, ByteCount - 4
+        VBA.PutMemPtr VarPtr(src), Source + 4
+        LSetByVal Target + 4, src
+        VBA.PutMemPtr VarPtr(src), vbNullPtr
+        VBA.PutMem4 Target, lbs0
+        VBA.PutMem4 Source, lbs0
+        If ByteCount > Target - Source Then
+            VBA.PutMem4 Target + (Target - Source), lbs1
+        End If
+    End Sub
+    
+    Public Sub MemMoveEx(ByVal Target As LongPtr, ByVal Source As LongPtr, ByVal ByteCount As LongPtr)
+        Const MAX_LONG As Long = &H7FFFFFFF&
+    	If Target > Source Then
+            If Source + ByteCount > Target Then
+                ' Move Forward + Overlapping
+                #If Win64 Then
+                    RtlMoveMemory Target, Source, ByteCount
+                #Else
+                    Const chunkSize As Long = VARIANT_SIZE * 4000
+                    Dim c As Long, nChunks As Long = CLng((ByteCount - 1) \ chunkSize)
+                    MemMoveBSTR Target + (nChunks * chunkSize), Source + (nChunks * chunkSize), CLng(ByteCount - nChunks * chunkSize)
+                    For c = nChunks - 1 To 0 Step -1
+                        MemMoveBSTR Target + (c * chunkSize), Source + (c * chunkSize), chunkSize
+                    Next c
+                #End If
+            ElseIf ByteCount < MAX_LONG Then
+                ' Move Forward + No overlapping
+                VBA.vbaCopyBytes CLng(ByteCount), Target, Source
+            Else
+            	' Move Forward + No overlapping + More than 2GB exceeding Long
+                RtlMoveMemory Target, Source, ByteCount
+            End If
+        ElseIf ByteCount < MAX_LONG Then
+        	' Move Backwards
+            VBA.vbaCopyBytes CLng(ByteCount), Target, Source
+        Else
+            ' Move Backwards + More than 2GB exceeding Long
+            RtlMoveMemory Target, Source, ByteCount
+        End If
+    End Sub
+
 End Module

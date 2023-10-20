@@ -42,6 +42,8 @@ Public Class ArrayList
     [ Hidden ]
     Public Property Get SyncRoot() As Variant Implements IArrayList.SyncRoot: Return Nothing: End Property
     
+    [ Hidden ]
+    [ Description ("CAUTION: Limit usage only in For Each In .Items calls, do NOT assign the return value of .Items to another variable unless you know what you're doing.") ]
     Public Function Items() As Variant() Implements IArrayList.Items
         Static sa As SAFEARRAY_1D
         With sa
@@ -195,8 +197,8 @@ Public Class ArrayList
     Public Sub RemoveAt(ByVal Index As Long) Implements IArrayList.RemoveAt
         If Index < 0 Or Index >= pIndex Then Err.Raise 9
         pItems(Index) = Empty
-        If Index < pIndex - 1 Then CopyMemory ByVal VarPtr(pItems(Index)), ByVal VarPtr(pItems(Index + 1)), (pIndex - Index - 1) * VARIANT_SIZE
-        MemInt(VarPtr(pItems(pIndex - 1))) = vbEmpty
+        If Index < pIndex - 1 Then VBA.vbaCopyBytes (pIndex - Index - 1) * VARIANT_SIZE, VarPtr(pItems(Index)), VarPtr(pItems(Index + 1))
+        VBA.PutMem2 VarPtr(pItems(pIndex - 1)), vbEmpty
         pIndex -= 1
         pVersion += 1
     End Sub
@@ -207,7 +209,7 @@ Public Class ArrayList
         For i = 0 To GetCount - 1
             pItems(Index + i) = Empty
         Next i
-        If Index < pIndex - 1 Then CopyMemory ByVal VarPtr(pItems(Index)), ByVal VarPtr(pItems(Index + GetCount)), (pIndex - Index - GetCount) * VARIANT_SIZE
+        If Index < pIndex - 1 Then VBA.vbaCopyBytes (pIndex - Index - GetCount) * VARIANT_SIZE, VarPtr(pItems(Index)), VarPtr(pItems(Index + GetCount))
         ZeroMemory VarPtr(pItems(pIndex - GetCount)), GetCount * VARIANT_SIZE
         pIndex -= GetCount
         pVersion += 1
@@ -299,6 +301,9 @@ Public Class ArrayList
         pVersion += 1
     End Sub
     
+    /* [ CompilerOptions ("+llvm,+optimize") ] */
+    [ ArrayBoundsChecks (False) ]
+    [ IntegerOverflowChecks (False) ]
     Public Sub Sort(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional Comparer As IComparer = Nothing) Implements IArrayList.Sort
         If IsMissing(GetCount) Then GetCount = pIndex - Index
         If Comparer IsNot Nothing Then
@@ -309,6 +314,9 @@ Public Class ArrayList
         pVersion += 1
     End Sub
     
+    /* [ CompilerOptions ("+llvm,+optimize") ] */
+    [ ArrayBoundsChecks (False) ]
+    [ IntegerOverflowChecks (False) ]
     [ Description ("Searches a section of a sorted list. Returns the index of the given value in the list. If not found, returns a negative integer. Use the bitwise operator (Not) to get the index of the first element larger than this one, if any.") ]
     Public Function BinarySearch(ByVal Index As Long, ByVal GetCount As Long, Value As Variant, Optional ByRef Comparer As IComparer = Nothing) As Long Implements IArrayList.BinarySearch
         Dim lo As Long, hi As Long, i As Long
@@ -401,9 +409,13 @@ Public Class ArrayList
     Private Sub ReserveSpaceForInsert(ByVal Index As Long, ByVal GetCount As Long)
         If pIndex + GetCount >= UBound(pItems) Then GrowCapacity GetCount
         ' MemCopy VarPtr(pItems(Index + GetCount)), VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
-        CopyMemory ByVal VarPtr(pItems(Index + GetCount)), ByVal VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
+        #If Win64 Then
+            CopyMemory ByVal VarPtr(pItems(Index + GetCount)), ByVal VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
+        #Else
+        	MemMoveEx VarPtr(pItems(Index + GetCount)), VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
+        #End If
         If GetCount = 1 Then
-            MemInt(VarPtr(pItems(Index))) = vbEmpty
+            VBA.PutMem2 VarPtr(pItems(Index)), vbEmpty
         Else
             ZeroMemory VarPtr(pItems(Index)), GetCount * VARIANT_SIZE
         End If

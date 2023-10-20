@@ -194,6 +194,8 @@ Public Class ListRange
         pVersion += 1
     End Property
     
+    [ Hidden ]
+    [ Description ("CAUTION: Limit usage only in For Each In .Items calls, do NOT assign the return value of .Items to another variable unless you know what you're doing.") ]
     Public Function Items() As Variant() Implements IArrayList.Items
         Static sa As SAFEARRAY_1D
         InternalUpdateRange

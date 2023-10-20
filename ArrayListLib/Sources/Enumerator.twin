@@ -115,7 +115,6 @@ Public Class Enumerator
     End Sub
 
     /* [ CompilerOptions ("+llvm,+optimize") ] */
-    [ ArrayBoundsChecks (False) ]
     [ IntegerOverflowChecks (False) ]
     Private Sub Assign(ByRef Target As Variant, ByRef Value As Variant)
         If IsObject(Value) Then Set Target = Value Else Target = Value
