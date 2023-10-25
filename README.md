@@ -7,223 +7,235 @@ Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid
 ## **Features**
 
 * Less than `0.35 MB VMem` overheat _(vs `423 MB` of `mscorlib`)_
-* __Drop-in replacement__ - Is expected to provide the exact same functionality as `mscorlib.ArrayList` in order to easily replace it.
-* Unlike `mscorlib.ArrayList`, seamlessly accepts `VBA Array`s or any other enumerable type as parameter.
+* __Drop-in replacement__ - It's expected to provide the exact same functionality as `mscorlib.ArrayList` when used in `VBA`.
+* Unlike `mscorlib.ArrayList`, it allows plain `VBA Arrays` and other enumerable objects as input in parameters expecting a collection-like object _(Of `ICollection` Type in `mscorlib`'s [ArrayList.cs](https://referencesource.microsoft.com/#mscorlib/system/collections/arraylist.cs,215))_.
+  ```vb
+  ' Example:
+  .AddRange(Array( _
+      "String at index 0", _
+      Array(34, "Lorem Ipsum"), _
+      Array(Now(), "Hello World!"), _
+      256))
+  ```
 * Provides an advanced `Enumerator` allowing the use of `For Each` within subranges, backwards enumeration, custom iteration steps and direct access to the backing enumerator instance allowing an even wider set of possibilities while iterating the `Enumerator`.
-* The [`Enumerator`](https://github.com/Theadd/ArrayList/blob/main/ArrayListLib/Sources/Enumerator.twin#L21) class is publicly accessible ~~so you can reuse it anywhere else in your code~~ (not yet).
+* The [`Enumerator`](https://github.com/Theadd/ArrayList/blob/main/ArrayListLib/Sources/Enumerator.twin#L21) class is publicly accessible so you can reuse it anywhere else in your code.
 
 
-## **Performance Comparison**
+## **Perf Tests**
+
+
 
 <table>
     <thead>
         <tr>
-            <th> </th>
-            <th colspan=2>ArrayList (DLL)</th>
-            <th colspan=2>ArrayList (VBA)</th>
+            <th>&nbsp;</th>
+            <th colspan=4>ArrayList Class</th>
             <th colspan=2>mscorlib.ArrayList</th>
-            <th colspan=2>VBA Collection</th>
+            <th colspan=4>VBA.Collection</th>
+        </tr>
+        <tr>
+            <th>&nbsp;</th>
+            <th colspan=2>x64</th>
+            <th colspan=2>x32</th>
+            <th>x64</th>
+            <th>x32</th>
+            <th colspan=2>x64</th>
+            <th colspan=2>x32</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <th>.Add (x5000)</th>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0.031s</td>
-            <td><code>x31</code></td>
-            <td>0s</td>
-            <td><code>x1</code></td>
+            <td><code>.Add</code> <sup><small><br/>(x5000)</small></sup></td>
+            <td>0&nbsp;ms</td>
+            <td><b>6%</b></td>
+            <td>0&nbsp;ms</td>
+            <td><b>4%</b></td>
+            <td>17&nbsp;ms</td>
+            <td>23&nbsp;ms</td>
+            <td>0&nbsp;ms</td>
+            <td><b>6%</b></td>
+            <td>1&nbsp;ms</td>
+            <td><b>4%</b></td>
         </tr>
         <tr>
-            <th>.Add (250x5000)</th>
-            <td>0.156s</td>
-            <td><code>x1</code></td>
-            <td>0.195s</td>
-            <td><code>x1.3</code></td>
-            <td>3.578s</td>
-            <td><code>x22.9</code></td>
-            <td>0.156s</td>
-            <td><code>x1</code></td>
+            <td><code>.Add</code> <sup><small><br/>(250x5000)</small></sup></td>
+            <td>134&nbsp;ms</td>
+            <td><b>4%</b></td>
+            <td>181&nbsp;ms</td>
+            <td><b>3%</b></td>
+            <td>3579&nbsp;ms</td>
+            <td>6302&nbsp;ms</td>
+            <td>186&nbsp;ms</td>
+            <td><b>5%</b></td>
+            <td>184&nbsp;ms</td>
+            <td><b>3%</b></td>
         </tr>
         <tr>
-            <th>.Clone (50x5000)</th>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0.047s</td>
-            <td><code>x47</code></td>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>2.945s</td>
-            <td><code>x2945</code></td>
+            <td><code>.Clone</code> <sup><small><br/>(50x5000)</small></sup></td>
+            <td>3&nbsp;ms</td>
+            <td><b>100%</b></td>
+            <td>5&nbsp;ms</td>
+            <td><b>167%</b></td>
+            <td>3&nbsp;ms</td>
+            <td>3&nbsp;ms</td>
+            <td>2773&nbsp;ms</td>
+            <td><b>92433%</b></td>
+            <td>2674&nbsp;ms</td>
+            <td><b>89133%</b></td>
         </tr>
         <tr>
-            <th>.Insert Index:=0 (50x1000)</th>
-            <td>0.727s</td>
-            <td><code>x90.9</code></td>
-            <td>0.914s</td>
-            <td><code>x114.3</code></td>
-            <td>1.008s</td>
-            <td><code>x126</code></td>
-            <td>0.008s</td>
-            <td><code>x1</code></td>
+            <td><code>.Insert&nbsp;Index:=0</code> <sup><small><br/>(20x1000)</small></sup></td>
+            <td>9&nbsp;ms</td>
+            <td><b>4%</b></td>
+            <td>10&nbsp;ms</td>
+            <td><b>6%</b></td>
+            <td>209&nbsp;ms</td>
+            <td>181&nbsp;ms</td>
+            <td>3&nbsp;ms</td>
+            <td><b>1%</b></td>
+            <td>4&nbsp;ms</td>
+            <td><b>2%</b></td>
         </tr>
         <tr>
-            <th>.Insert Index:=RND (10x5000)</th>
-            <td>0.82s</td>
-            <td><code>x1</code></td>
-            <td>1.008s</td>
-            <td><code>x1.2</code></td>
-            <td>1.086s</td>
-            <td><code>x1.3</code></td>
-            <td>0.898s</td>
-            <td><code>x1.1</code></td>
+            <td><code>.Insert&nbsp;Index:=RND</code> <sup><small><br/>(2x5000)</small></sup></td>
+            <td>37&nbsp;ms</td>
+            <td><b>49%</b></td>
+            <td>43&nbsp;ms</td>
+            <td><b>41%</b></td>
+            <td>75&nbsp;ms</td>
+            <td>104&nbsp;ms</td>
+            <td>147&nbsp;ms</td>
+            <td><b>196%</b></td>
+            <td>124&nbsp;ms</td>
+            <td><b>119%</b></td>
         </tr>
         <tr>
-            <th>.Item (Read) SEQ (10x5000)</th>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0.008s</td>
-            <td><code>x8</code></td>
-            <td>0.227s</td>
-            <td><code>x227</code></td>
-            <td>0.562s</td>
-            <td><code>x562</code></td>
+            <td><code>.Item</code> <sup><small><br/>(Read) SEQ (20x5000)</small></sup></td>
+            <td>9&nbsp;ms</td>
+            <td><b>2%</b></td>
+            <td>10&nbsp;ms</td>
+            <td><b>2%</b></td>
+            <td>421&nbsp;ms</td>
+            <td>644&nbsp;ms</td>
+            <td>1125&nbsp;ms</td>
+            <td><b>267%</b></td>
+            <td>1052&nbsp;ms</td>
+            <td><b>163%</b></td>
         </tr>
         <tr>
-            <th>.Item (Read) SEQ+RND (20x5000)</th>
-            <td>0.016s</td>
-            <td><code>x1</code></td>
-            <td>0.039s</td>
-            <td><code>x2.4</code></td>
-            <td>0.703s</td>
-            <td><code>x43.9</code></td>
-            <td>2.367s</td>
-            <td><code>x147.9</code></td>
+            <td><code>.Item</code> <sup><small><br/>(Read) SEQ+RND (20x5000)</small></sup></td>
+            <td>19&nbsp;ms</td>
+            <td><b>3%</b></td>
+            <td>21&nbsp;ms</td>
+            <td><b>2%</b></td>
+            <td>735&nbsp;ms</td>
+            <td>1135&nbsp;ms</td>
+            <td>2198&nbsp;ms</td>
+            <td><b>299%</b></td>
+            <td>2142&nbsp;ms</td>
+            <td><b>189%</b></td>
         </tr>
         <tr>
-            <th>.RemoveAt Index:=0 (x5000)</th>
-            <td>0.008s</td>
-            <td><code>x8</code></td>
-            <td>0.039s</td>
-            <td><code>x39</code></td>
-            <td>0.023s</td>
-            <td><code>x23</code></td>
-            <td>0s</td>
-            <td><code>x1</code></td>
+            <td><code>.RemoveAt&nbsp;Index:=0</code> <sup><small><br/>(x5000)</small></sup></td>
+            <td>5&nbsp;ms</td>
+            <td><b>22%</b></td>
+            <td>4&nbsp;ms</td>
+            <td><b>13%</b></td>
+            <td>23&nbsp;ms</td>
+            <td>31&nbsp;ms</td>
+            <td>1&nbsp;ms</td>
+            <td><b>4%</b></td>
+            <td>1&nbsp;ms</td>
+            <td><b>3%</b></td>
         </tr>
         <tr>
-            <th>.RemoveAt Index:=RND (x12000)</th>
-            <td>0.344s</td>
-            <td><code>x1.7</code></td>
-            <td>0.477s</td>
-            <td><code>x2.3</code></td>
-            <td>0.203s</td>
-            <td><code>x1</code></td>
-            <td>0.914s</td>
-            <td><code>x4.5</code></td>
+            <td><code>.RemoveAt&nbsp;Index:=RND</code> <sup><small><br/>(x12000)</small></sup></td>
+            <td>70&nbsp;ms</td>
+            <td><b>34%</b></td>
+            <td>42&nbsp;ms</td>
+            <td><b>20%</b></td>
+            <td>203&nbsp;ms</td>
+            <td>209&nbsp;ms</td>
+            <td>910&nbsp;ms</td>
+            <td><b>448%</b></td>
+            <td>675&nbsp;ms</td>
+            <td><b>323%</b></td>
         </tr>
         <tr>
-            <th>.RemoveAt Index:=LAST (x12000)</th>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0.031s</td>
-            <td><code>x31</code></td>
-            <td>0.031s</td>
-            <td><code>x31</code></td>
-            <td>0.477s</td>
-            <td><code>x477</code></td>
+            <td><code>.RemoveAt&nbsp;Index:=LAST</code> <sup><small><br/>(x12000)</small></sup></td>
+            <td>1&nbsp;ms</td>
+            <td><b>3%</b></td>
+            <td>2&nbsp;ms</td>
+            <td><b>3%</b></td>
+            <td>33&nbsp;ms</td>
+            <td>58&nbsp;ms</td>
+            <td>508&nbsp;ms</td>
+            <td><b>1539%</b></td>
+            <td>340&nbsp;ms</td>
+            <td><b>586%</b></td>
         </tr>
         <tr>
-            <th>.AddRange Array(24000)</th>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0.086s</td>
-            <td><code>x86</code></td>
-            <td>0s</td>
-            <td><code>x1</code></td>
-        </tr>
-        <tr>
-            <th>.AddRange Array(15000)</th>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0.039s</td>
-            <td><code>x39</code></td>
-            <td>0s</td>
-            <td><code>x1</code></td>
-        </tr>
-        <tr>
-            <th>.GetRange Index:=RND (1000x5000)</th>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0s</td>
-            <td><code>x1</code></td>
-            <td>0.031s</td>
-            <td><code>x31</code></td>
-            <td>N/A</td>
+            <td><code>.GetRange&nbsp;Index:=RND</code> <sup><small><br/>(1000x5000)</small></sup></td>
+            <td>2&nbsp;ms</td>
+            <td><b>18%</b></td>
+            <td>3&nbsp;ms</td>
+            <td><b>16%</b></td>
+            <td>11&nbsp;ms</td>
+            <td>19&nbsp;ms</td>
+            <td></td>
+            <td></td>
+            <td></td>
             <td></td>
         </tr>
         <tr>
-            <th>.AddRange Range (x1000)</th>
-            <td>0.07s</td>
-            <td><code>x1</code></td>
-            <td>0.078s</td>
-            <td><code>x1.1</code></td>
-            <td>0.211s</td>
-            <td><code>x3</code></td>
-            <td>N/A</td>
+            <td><code>.AddRange&nbsp;Range</code> <sup><small><br/>(x1000)</small></sup></td>
+            <td>77&nbsp;ms</td>
+            <td><b>31%</b></td>
+            <td>176&nbsp;ms</td>
+            <td><b>103%</b></td>
+            <td>249&nbsp;ms</td>
+            <td>171&nbsp;ms</td>
+            <td></td>
+            <td></td>
+            <td></td>
             <td></td>
         </tr>
         <tr>
-            <th>For Each (10x100000)</th>
-            <td>0.109s</td>
-            <td><code>x4.7</code></td>
-            <td>3.664s</td>
-            <td><code>x159.3</code></td>
-            <td>0.867s</td>
-            <td><code>x37.7</code></td>
-            <td>0.023s</td>
-            <td><code>x1</code></td>
+            <td><code>.GetEnumerator</code> <sup><small><br/>(For Each) (10x100000)</small></sup></td>
+            <td>111&nbsp;ms</td>
+            <td><b>14%</b></td>
+            <td>114&nbsp;ms</td>
+            <td><b>17%</b></td>
+            <td>775&nbsp;ms</td>
+            <td>659&nbsp;ms</td>
+            <td>25&nbsp;ms</td>
+            <td><b>3%</b></td>
+            <td>25&nbsp;ms</td>
+            <td><b>4%</b></td>
         </tr>
         <tr>
-            <th>For Each In .Items (10x100000)</th>
-            <td>0.016s</td>
-            <td><code>x1</code></td>
-            <td>0.017s</td>
-            <td><code>x1.1</code></td>
-            <td>0.867s</td>
-            <td><code>x54.2</code></td>
-            <td>0.023s</td>
-            <td><code>x1.4</code></td>
-        </tr>
-        <tr>
-            <th>.Sort (100000)</th>
-            <td>0.219s</td>
-            <td><code>x3.5</code></td>
-            <td>0.234s</td>
-            <td><code>x3.8</code></td>
-            <td>0.062s</td>
-            <td><code>x1</code></td>
-            <td>N/A</td>
+            <td><code>.Sort</code> <sup><small><br/>(100000)</small></sup></td>
+            <td>167&nbsp;ms</td>
+            <td><b>293%</b></td>
+            <td>181&nbsp;ms</td>
+            <td><b>503%</b></td>
+            <td>57&nbsp;ms</td>
+            <td>36&nbsp;ms</td>
+            <td></td>
+            <td></td>
+            <td></td>
             <td></td>
         </tr>
         <tr>
-            <th>.Sort w/ Comparer (100000)</th>
-            <td>0.492s</td>
-            <td><code>x1</code></td>
-            <td>0.781s</td>
-            <td><code>x1.6</code></td>
-            <td>1.195s</td>
-            <td><code>x2.4</code></td>
-            <td>N/A</td>
-            <td></td>
+            <td><code>.Sort&nbsp;w/&nbsp;Comparer</code> <sup><small><br/>(100000)</small></sup></td>
+            <td>494&nbsp;ms</td>
+            <td><b>37%</b></td>
+            <td>453&nbsp;ms</td>
+            <td><b>18%</b></td>
+            <td>1320&nbsp;ms</td>
+            <td>2473&nbsp;ms</td>
         </tr>
     </tbody>
 </table>
+
 

@@ -10,15 +10,19 @@ End Interface
 [ InterfaceId ("8E42D737-24C2-4D3F-8903-4B30E9383C69") ]
 [ COMExtensible (True) ]
 Public Interface IEnumerator Extends IEnumVARIANT
+    [ Description ("The Index of the current item being enumerated. If you manually change it, the next item being enumerated will be the one at the specified index.") ]
     Property Get CurrentIndex() As Long
     Property Let CurrentIndex(Value As Long)
+    [ Description ("Allows to change the iteration steps count and it's direction.") ]
     Property Get CurrentStep() As Long
     Property Let CurrentStep(Value As Long)
+    [ Description ("It's the size of the list, array, or section of it, which is being enumerated. Use with caution and only when enumerating a section of a bigger collection. This won't check for out of bounds.") ]
     Property Get CurrentSize() As Long
     Property Let CurrentSize(Value As Long)
 End Interface
 
-[ ClassId ("D7EC9292-8200-4A47-ACDA-CA78217CF881") ]
+[ ClassId ("5892CEA6-ADE3-4532-B478-1F6122F3537C") ]
+[ COMCreatable (True) ]
 Public Class Enumerator
     Implements IEnumerator
 
@@ -46,13 +50,10 @@ Public Class Enumerator
     	
     Public Property Let CurrentSize(Value As Long) Implements IEnumerator.CurrentSize
         MaxValue = Value
-        MemLong(ArrPtr(Items) + SAFEARRAY_CELEMENTS_OFFSET) = Value
+        PutMem4 ArrPtr(Items) + SAFEARRAY_CELEMENTS_OFFSET, Value
     End Property
     
     Public Sub New()
-        Items = Array()
-        MaxValue = -1
-        CStep = 1
     End Sub
     
     Public Sub New(ByRef TargetArray() As Variant, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional ByVal GetStep As Long = 1, Optional ByRef ThisEnumerator As IEnumerator)
@@ -71,11 +72,16 @@ Public Class Enumerator
             .pvData = VarPtr(TargetArray(Index))
             .rgsabound0.cElements = GetCount
         End With
-        MemLongPtr(VarPtrArr(Items)) = VarPtr(sa)
+        VBA.PutMemPtr VarPtrArr(Items), VarPtr(sa)
         CStep = GetStep
         MaxValue = GetCount
         If CStep < 0 Then CIndex = GetCount - 1
     End Sub
+    
+    [ Enumerator ]
+    Public Function GetEnumerator() As stdole.IUnknown
+        Return Me
+    End Function
 
     /* [ CompilerOptions ("+llvm,+optimize") ] */
     [ ArrayBoundsChecks (False) ]
@@ -122,7 +128,7 @@ Public Class Enumerator
     
     Private Sub Class_Terminate()
         On Error Resume Next
-        If MaxValue >= 0 Then MemLongPtr(VarPtrArr(Items)) = vbNullPtr
+        If IsArrayInitialized(Items) Then PutMemPtr VarPtrArr(Items), vbNullPtr
         On Error GoTo 0
     End Sub
 End Class

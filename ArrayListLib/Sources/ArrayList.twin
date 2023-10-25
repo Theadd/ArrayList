@@ -32,7 +32,7 @@ Public Class ArrayList
     	
     Public Property Get Capacity() As Long Implements IArrayList.Capacity: Return UBound(pItems) + 1: End Property
     	
-    Public Property Let Capacity(Value As Long) Implements IArrayList.Capacity: ReDim Preserve pItems(0 To Value - 1): End Property
+    Public Property Let Capacity(Value As Long) Implements IArrayList.Capacity: ReDim Preserve pItems(LBound(pItems) To Value - 1): End Property
     [ Hidden ]
     Public Property Get IsFixedSize() As Boolean Implements IArrayList.IsFixedSize: Return False: End Property
     [ Hidden ]
@@ -54,7 +54,7 @@ Public Class ArrayList
             .pvData = VarPtr(pItems(0))
             .rgsabound0.cElements = pIndex
         End With
-        MemLongPtr(VarPtrArr(Items)) = VarPtr(sa)
+        VBA.PutMemPtr VarPtrArr(Items), VarPtr(sa)
     End Function
     
     [ Description ("Adds an item to the list. The return value is the position the new element was inserted in.") ]
@@ -218,9 +218,9 @@ Public Class ArrayList
     Public Sub Reverse(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant) Implements IArrayList.Reverse
         If IsMissing(GetCount) Then GetCount = pIndex - Index
         If Index < 0 Or GetCount < 0 Or (pIndex - Index < GetCount) Then Err.Raise 9
-        Dim i As Long, iMax As Long = GetCount \ 2
+        Dim i As Long, p0 As LongPtr = VarPtr(pItems(0)), iMax As Long = GetCount \ 2
         For i = 0 To iMax
-            Swap pItems(Index + i), pItems(Index + (GetCount - 1) - i)
+        	VSwap p0 + (Index + i) * VARIANT_SIZE, p0 + CLngPtr(Index + (GetCount - 1) - i) * VARIANT_SIZE
         Next i
         pVersion += 1
     End Sub
@@ -379,6 +379,23 @@ Public Class ArrayList
     
     Private Function GetAddressOfItemAt(Index As Long) As LongPtr Implements IArrayList.GetAddressOfItemAt: Return VarPtr(pItems(Index)): End Function
     
+    #If Win64 Then
+        Private Type UDTVariantB
+            bytes(0 To 23) As Byte
+        End Type
+    #Else
+        Private Type UDTVariantB
+            bytes(0 To 15) As Byte
+        End Type
+    #End If
+    
+    Private Sub VSwap(ByRef A As UDTVariantB, ByRef B As UDTVariantB)
+        Static v As UDTVariantB
+        LSet v = A
+        LSet A = B
+        LSet B = v
+    End Sub
+    
     /* [ CompilerOptions ("+llvm,+optimize") ] */
     [ ArrayBoundsChecks (False) ]
     [ IntegerOverflowChecks (False) ]
@@ -399,18 +416,37 @@ Public Class ArrayList
     Private Sub GrowCapacity(ByVal Increment As Long)
         If pIndex + Increment > UBound(pItems) Then
             If (UBound(pItems) * 2) + 2 >= pIndex + Increment Then
-                ReDim Preserve pItems(0 To (UBound(pItems) * 2) + 2)
+                ReDim Preserve pItems(LBound(pItems) To (UBound(pItems) * 2) + 2)
             Else
-                ReDim Preserve pItems(0 To pIndex + Increment)
+                ReDim Preserve pItems(LBound(pItems) To pIndex + Increment)
             End If
         End If
     End Sub
     
+    Private Sub ReserveSpaceForInsertOfOneAtZero()
+    	Dim ub As Long = UBound(pItems), lb As Long = LBound(pItems)
+        If lb < 0 Then
+            PutMem4 ArrPtr(pItems) + SAFEARRAY_LLBOUND_OFFSET, lb + 1
+        Else
+            If pIndex + 30 > ub Then
+                ReDim Preserve pItems(-30& To (ub * 2) + 2)
+            Else
+                PutMem4 ArrPtr(pItems) + SAFEARRAY_LLBOUND_OFFSET, -30&
+            End If
+            lb = LBound(pItems)
+            MemMoveEx VarPtr(pItems(1)), VarPtr(pItems(lb)), pIndex * VARIANT_SIZE
+            ZeroMemory VarPtr(pItems(lb)), (Abs(lb) + 1) * VARIANT_SIZE
+        End If
+    End Sub
+    
     Private Sub ReserveSpaceForInsert(ByVal Index As Long, ByVal GetCount As Long)
-        If pIndex + GetCount >= UBound(pItems) Then GrowCapacity GetCount
-        ' MemCopy VarPtr(pItems(Index + GetCount)), VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
+    	If Index = 0 AndAlso GetCount = 1 AndAlso pIndex > 0 Then
+            ReserveSpaceForInsertOfOneAtZero
+            Exit Sub
+        End If
+        If pIndex + GetCount > UBound(pItems) Then GrowCapacity GetCount
         #If Win64 Then
-            CopyMemory ByVal VarPtr(pItems(Index + GetCount)), ByVal VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
+            RtlMoveMemory VarPtr(pItems(Index + GetCount)), VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
         #Else
         	MemMoveEx VarPtr(pItems(Index + GetCount)), VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
         #End If
@@ -429,40 +465,32 @@ Public Class ArrayList
     End Function
 
     Private Sub InsertListTo(ByVal Index As Long, ByVal GetCount As Long, ByVal Target As IListRange)
-        Dim pv0 As LongPtr, pv0base As LongPtr, pvIdx As LongPtr, t() As Variant, isContained As Boolean
-        If GetCount > 0 Then
-            pv0 = Target.GetAddressOfItemAt(0)
-            pv0base = VarPtr(pItems(0))
-            If IsContainedInMemoryRange(Target, Index) Then
-                t = Target.ToArray()
-                pv0 = VarPtr(t(0))
-            Else
-                isContained = IsContainedInMemoryRange(Target)
-            End If
-            GrowCapacity GetCount
-            If Index < pIndex Then
-                ' Move memory `Target.Count` positions to the right, from `Index` position, due to memory overlapping,
-                ' it is done using a separate memory region as helper.
-                If CreateMemoryCopy(pvIdx, VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE) Then
-                    ' SafeArrayCopyData releases any resources in destination array and those, if present, are
-                    ' just copied to the right without increasing reference count so, we clear it beforehand to prevent 
-                    ' SafeArrayCopyData to release those resources.
-                    ZeroMemory VarPtr(pItems(Index)), GetCount * VARIANT_SIZE
-                    ' Copy back the elements from the temporal memory region to it's final position within the list.
-                    CopyMemory ByVal VarPtr(pItems(Index + GetCount)), ByVal pvIdx, (pIndex - Index) * VARIANT_SIZE
-                    FreeMemoryCopy pvIdx
-                Else
-                    Err.Raise 7
-                End If
-            End If
-            If VarPtr(pItems(0)) <> pv0base And isContained Then
-                ' When `Target` derived from an array range contained within this list and, due to `Redim Preserve` from 
-                ' `GrowCapacity` above, the array gets reallocated to a different memory region, we've to update the pointer.
-                pv0 = VarPtr(pItems(0)) + (pv0 - pv0base)
-            End If
-            ' Finally, insert (copy) all items in `Target` list to the region we just cleared for them.
-            VariantArrayClone VarPtr(pItems(Index)), pv0, GetCount
+        Dim pv0 As LongPtr, pv0base As LongPtr, t() As Variant, isContained As Boolean
+        If GetCount <= 0 Then Exit Sub
+        pv0 = Target.GetAddressOfItemAt(0)
+        pv0base = VarPtr(pItems(0))
+        If IsContainedInMemoryRange(Target, Index) Then
+            t = Target.ToArray()
+            pv0 = VarPtr(t(0))
+        Else
+            isContained = IsContainedInMemoryRange(Target)
         End If
+        GrowCapacity GetCount
+        If Index < pIndex Then
+            ' Move memory `Target.Count` positions to the right, from `Index` position
+            MemMoveEx VarPtr(pItems(Index + GetCount)), VarPtr(pItems(Index)), (pIndex - Index) * VARIANT_SIZE
+            ' SafeArrayCopyData releases any resources in destination array and those, if present, are
+            ' just copied to the right without increasing reference count so, we clear it beforehand to prevent 
+            ' SafeArrayCopyData to release those resources.
+            ZeroMemory VarPtr(pItems(Index)), GetCount * VARIANT_SIZE
+        End If
+        If VarPtr(pItems(0)) <> pv0base And isContained Then
+            ' When `Target` derived from an array range contained within this list and, due to `Redim Preserve` from 
+            ' `GrowCapacity` above, the array may get reallocated to a different memory region, we've to update the pointer.
+            pv0 = VarPtr(pItems(0)) + (pv0 - pv0base)
+        End If
+        ' Finally, insert (copy) all items in `Target` list to the region we just cleared for them.
+        VariantArrayClone VarPtr(pItems(Index)), pv0, GetCount
     End Sub
 
     Private Sub QuickSort(l As Long, r As Long, ByRef Comparer As IComparer)
@@ -474,7 +502,7 @@ Public Class ArrayList
             Do While (Comparer.Compare(pItems(l0), p) < 0 And l0 < r): l0 += 1: Loop
             Do While (Comparer.Compare(p, pItems(r0)) < 0 And r0 > l): r0 -= 1: Loop
             If (l0 <= r0) Then
-                Swap pItems(l0), pItems(r0)
+                VSwap VarPtr(pItems(l0)), VarPtr(pItems(r0))
                 l0 += 1
                 r0 -= 1
             End If
@@ -491,7 +519,7 @@ Public Class ArrayList
             Do While (pItems(l0) < p And l0 < r): l0 += 1: Loop
             Do While (p < pItems(r0) And r0 > l): r0 -= 1: Loop
             If (l0 <= r0) Then
-                Swap pItems(l0), pItems(r0)
+                VSwap VarPtr(pItems(l0)), VarPtr(pItems(r0))
                 l0 += 1
                 r0 -= 1
             End If
