@@ -1,13 +1,31 @@
-# **ArrayList**
-`VBA` / `VB6` mscorlib's **ArrayList drop-in replacement**, implemented using [twinBASIC](https://github.com/twinbasic/twinbasic).
+# [**ArrayList**](https://github.com/Theadd/ArrayList)
 
-Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid of the `423 MB VMem` overheat added to my VBA projects when using it's `ArrayList` implementation. However, it turned out heavily outperform `mscorlib.ArrayList` practically in every way while also, getting rid of the non-existing memory deallocation after releasing an `ArrayList` instance.
+<a href="https://github.com/Theadd/ArrayList">
+  <img height="28em" align="center" src="https://img.shields.io/badge/GitHub-333?style=for-the-badge&logo=&logoColor=white" alt="Github Repository Badge" />
+</a>
+<a href="https://github.com/Theadd/ArrayList/issues">
+  <img height="28em" align="center" src="https://img.shields.io/badge/ISSUES-333?style=for-the-badge&logo=&logoColor=white" alt="Issues Badge" />
+</a>
+<a href="https://github.com/Theadd/ArrayList/releases/latest">
+  <img height="28em" align="center" src="https://img.shields.io/badge/RELEASES-333?style=for-the-badge&logo=&logoColor=white" alt="Releases Badge" />
+</a>
+<a href="https://github.com/Theadd/ArrayList/blob/main/LICENSE">
+  <img height="28em" align="center" src="https://img.shields.io/badge/UNLICENSE-333?style=for-the-badge&logo=&logoColor=white" alt="Unlicense Badge" />
+</a>
+
+<br/>
+
+`VBA` / `VB6` mscorlib's **ArrayList drop-in replacement** with proper memory management and orders of magnitude faster than `mscorlib.ArrayList`, making use of [twinBASIC](https://github.com/twinbasic/twinbasic)'s new language features and memory management techniques from [VBA-MemoryTools](https://github.com/cristianbuse/VBA-MemoryTools).
+
+Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid of the `423 MB VMem` overheat added to VBA projects when using its `ArrayList` implementation. But it also turned out to exceed the speed performance of `mscorlib.ArrayList` by far, along with a proper memory release/deallocation when destroyed or it goes out of scope. Which can't even be manually achieved with `mscorlib.ArrayList` as setting it to `Nothing` or `.Clear` 'ing it doesn't free any memory.
 
 
 ## **Features**
 
 * Less than `0.35 MB VMem` overheat _(vs `423 MB` of `mscorlib`)_
+
 * __Drop-in replacement__ - It's expected to provide the exact same functionality as `mscorlib.ArrayList` when used in `VBA`.
+
 * Unlike `mscorlib.ArrayList`, it allows plain `VBA Arrays` and other enumerable objects as input in parameters expecting a collection-like object _(Of `ICollection` Type in `mscorlib`'s [ArrayList.cs](https://referencesource.microsoft.com/#mscorlib/system/collections/arraylist.cs,215))_.
   ```vb
   ' Example:
@@ -17,12 +35,18 @@ Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid
       Array(Now(), "Hello World!"), _
       256))
   ```
+
 * Provides an advanced `Enumerator` allowing the use of `For Each` within subranges, backwards enumeration, custom iteration steps and direct access to the backing enumerator instance allowing an even wider set of possibilities while iterating the `Enumerator`.
+
 * The [`Enumerator`](https://github.com/Theadd/ArrayList/blob/main/ArrayListLib/Sources/Enumerator.twin#L21) class is publicly accessible so you can reuse it anywhere else in your code.
 
 
-## **Perf Tests**
 
+## **Performance Tests Results**
+
+**Percentages are calculated against `mscorlib.ArrayList`'s timings from corresponding _Win64_ or _Win32_ results.**
+
+The lower the percentage, the better. **20%** equals to a 5 times faster performance while **500%** would be 5 times slower than their corresponding _Win64_ or _Win32_ execution time in `mscorlib.ArrayList`.
 
 
 <table>
@@ -239,3 +263,30 @@ Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid
 </table>
 
 
+**Where <kbd> `.Add` <sup><small>(250x5000)</small></sup></kbd> equals to the following code.**
+
+```vb
+For e = 0 To Iterations - 1     ' Iterations = 250
+    For i = 0 To UBound(t)      ' UBound(t) = 5000 - 1
+        .Add t(i)
+    Next i
+Next e
+```
+*That's a total of **1,250,000** calls to `.Add`, taking only **134ms** (Win64) instead of **3,579ms** in `mscorlib.ArrayList`.*
+
+
+While the `.Add` method of `VBA.Collection` has similar performance as in our `ArrayList`, reading/accessing their values is potentially slow and gets exponentially worse depending on the number of elements it contains. A simple sequential read of **5,000** items in a `VBA.Collection` takes **59 ms**, reading **10,000** items takes **266 ms**, which is almost 5 times more with just twice the size but reading **100,000** items, takes **36,069 ms**, 135 times slower just increasing 10 times it's size. Our `ArrayList` only takes **9 ms** to read **100,000** items, increasing linearly, taking **94 ms** to read **1,000,000** items.
+
+So in order to include `VBA.Collection` in the table above, tests are iterated multiple times over **5,000** items instead of using bigger sizes.
+
+
+## **Acknowledgments**
+
+* To [@CristianBuse](https://github.com/cristianbuse)'s [`VBA-MemoryTools`](https://github.com/cristianbuse/VBA-MemoryTools), from which I discovered a whole new level in `VBA` programming, is what runs the most performance-critical parts behind `ArrayList`, and himself for his amazing and extensive support.
+
+
+## **License**
+
+- [`LibMemory`](Sources/LibMemory.twin) from [VBA-MemoryTools](https://github.com/cristianbuse/VBA-MemoryTools) is released under the [MIT License](https://github.com/cristianbuse/VBA-MemoryTools/blob/master/LICENSE).
+
+- Everything else is released under [The Unlicense](https://github.com/Theadd/ArrayList/blob/main/LICENSE) into the public domain.
