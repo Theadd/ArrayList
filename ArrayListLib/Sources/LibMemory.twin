@@ -1,0 +1,91 @@
+Module LibMemory
+    '''=============================================================================
+    ''' VBA MemoryTools
+    ''' -----------------------------------------------
+    ''' https://github.com/cristianbuse/VBA-MemoryTools
+    ''' -----------------------------------------------
+    ''' MIT License
+    '''
+    ''' Copyright (c) 2020 Ion Cristian Buse
+    '''
+    ''' Permission is hereby granted, free of charge, to any person obtaining a copy
+    ''' of this software and associated documentation files (the "Software"), to
+    ''' deal in the Software without restriction, including without limitation the
+    ''' rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    ''' sell copies of the Software, and to permit persons to whom the Software is
+    ''' furnished to do so, subject to the following conditions:
+    '''
+    ''' The above copyright notice and this permission notice shall be included in
+    ''' all copies or substantial portions of the Software.
+    '''
+    ''' THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    ''' IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    ''' FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    ''' AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    ''' LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    ''' FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    ''' IN THE SOFTWARE.
+    '''=============================================================================
+    
+    #If Win64 Then
+        Public Const PTR_SIZE As Long = 8
+        Public Const VARIANT_SIZE As Long = 24
+    #Else
+        Public Const PTR_SIZE As Long = 4
+        Public Const VARIANT_SIZE As Long = 16
+    #End If
+    Public Const INT_SIZE As Long = 2
+    Public Const VT_BYREF As Long = &H4000
+    
+    Public Type SAFEARRAYBOUND
+        cElements As Long
+        lLbound As Long
+    End Type
+
+    Public Type SAFEARRAY_1D
+        cDims As Integer
+        fFeatures As Integer
+        cbElements As Long
+        cLocks As Long
+        #If Win64 Then
+            dummyPadding As Long
+            pvData As LongLong
+        #Else
+            pvData As Long
+        #End If
+        rgsabound0 As SAFEARRAYBOUND
+    End Type
+
+    '*******************************************************************************
+    'Returns the memory address of a variable of array type
+    'Returns error 5 for a non-array or an array wrapped in a Variant
+    '*******************************************************************************
+    Public Function VarPtrArr(ByRef arr As Variant) As LongPtr
+        Const vtArrByRef As Long = vbArray + VT_BYREF
+        Dim vt As Integer
+        VBA.GetMem2 VarPtr(arr), vt
+        If (vt And vtArrByRef) = vtArrByRef Then
+            Const pArrayOffset As Long = 8
+            VBA.GetMemPtr VarPtr(arr) + pArrayOffset, VarPtrArr
+        Else
+            Err.Raise 5, "VarPtrArr", "Array required"
+        End If
+    End Function
+
+    '*******************************************************************************
+    'Returns the pointer to the underlying SAFEARRAY structure of a VB array
+    'Returns error 5 for a non-array
+    '*******************************************************************************
+    Public Function ArrPtr(ByRef arr As Variant) As LongPtr
+        Dim vt As Integer
+        VBA.GetMem2 VarPtr(arr), vt
+        If vt And vbArray Then
+            Const pArrayOffset As Long = 8
+            VBA.GetMemPtr VarPtr(arr) + pArrayOffset, ArrPtr
+            If vt And VT_BYREF Then VBA.GetMemPtr ArrPtr, ArrPtr
+        Else
+            Err.Raise 5, "ArrPtr", "Array required"
+        End If
+    End Function
+    
+End Module

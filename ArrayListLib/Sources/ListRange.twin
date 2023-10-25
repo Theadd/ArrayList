@@ -31,7 +31,7 @@ Public Class ListRange
             .pvData = pList.GetAddressOfItemAt(Index)
             .rgsabound0.cElements = GetCount
         End With
-        MemLongPtr(VarPtrArr(pItems)) = VarPtr(sa)
+        PutMemPtr VarPtrArr(pItems), VarPtr(sa)
         Return Me
     End Function
     
@@ -41,7 +41,7 @@ Public Class ListRange
     
     Private Property Let Count(ByVal Value As Long)
         pIndex = Value
-        MemLong(ArrPtr(pItems) + SAFEARRAY_CELEMENTS_OFFSET) = Value
+        PutMem4 ArrPtr(pItems) + SAFEARRAY_CELEMENTS_OFFSET, Value
     End Property
     
     Public Function Add(Value As Variant) As Long Implements IArrayList.Add
@@ -207,7 +207,7 @@ Public Class ListRange
             .pvData = VarPtr(pItems(0))
             .rgsabound0.cElements = pIndex
         End With
-        MemLongPtr(VarPtrArr(Items)) = VarPtr(sa)
+        VBA.PutMemPtr VarPtrArr(Items), VarPtr(sa)
     End Function
     
     Public Function LastIndexOf(Value As Variant, ByVal Index As Variant, ByVal GetCount As Variant) As Long Implements IArrayList.LastIndexOf
@@ -277,7 +277,7 @@ Public Class ListRange
     
     Private Sub Class_Terminate()
         On Error Resume Next
-        MemLongPtr(VarPtrArr(pItems)) = vbNullPtr
+        PutMemPtr VarPtrArr(pItems), vbNullPtr
         Set pList = Nothing
         On Error GoTo 0
     End Sub

@@ -19,6 +19,7 @@
 			"name": "OLE Automation",
 			"path32": "C:\\Windows\\SysWOW64\\stdole2.tlb",
 			"path64": "C:\\Windows\\System32\\stdole2.tlb",
+			"symbolId": "stdole",
 			"versionMajor": 2,
 			"versionMinor": 0
 		}
@@ -26,9 +27,9 @@
 	"project.settingsVersion": 1,
 	"project.useProjectIdForTypeLibraryId": true,
 	"project.versionAutoIncrement": "Build",
-	"project.versionBuild": 74,
+	"project.versionBuild": 103,
 	"project.versionMajor": 1,
-	"project.versionMinor": 1,
+	"project.versionMinor": 2,
 	"project.versionProductName": "ArrayList",
 	"project.versionRevision": 0,
 	"project.warnings": {

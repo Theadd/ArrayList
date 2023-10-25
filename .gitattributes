@@ -1,0 +1,4 @@
+*.twin linguist-language=vb6
+*.twinproj linguist-language=vb6
+*.odl linguist-language=cpp
+*.idl linguist-language=cpp
