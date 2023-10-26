@@ -319,9 +319,7 @@ Public Class ArrayList
     [ IntegerOverflowChecks (False) ]
     [ Description ("Searches a section of a sorted list. Returns the index of the given value in the list. If not found, returns a negative integer. Use the bitwise operator (Not) to get the index of the first element larger than this one, if any.") ]
     Public Function BinarySearch(ByVal Index As Long, ByVal GetCount As Long, Value As Variant, Optional ByRef Comparer As IComparer = Nothing) As Long Implements IArrayList.BinarySearch
-        Dim lo As Long, hi As Long, i As Long
-        lo = Index
-        hi = Index + GetCount - 1
+        Dim lo As Long = Index, hi As Long = Index + GetCount - 1, i As Long
         If Comparer IsNot Nothing Then
             Do While (lo <= hi)
                 i = lo + ((hi - lo) \ 2)
