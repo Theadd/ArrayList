@@ -2,7 +2,7 @@
 [ ClassId ("0A102E9C-9E68-411A-A4B8-E6128FC07721") ]
 [ COMCreatable (False) ]
 Public Class ListRange
-    Implements IArrayList
+    Implements ArrayList
     
     Private pList As IArrayList
     Private pIndex As Long
@@ -11,10 +11,6 @@ Public Class ListRange
     Private pItems() As Variant
     
     Public Sub New(): End Sub
-        
-    Public Sub New(TargetList As IArrayList, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant)
-        Bind TargetList, Index, GetCount
-    End Sub
     
     Public Function Bind(TargetList As IArrayList, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant) As ListRange
         Static sa As SAFEARRAY_1D
@@ -302,5 +298,4 @@ Public Class ListRange
     Private Function C2IArrayList(Value As Variant) As IArrayList: Return Value: End Function
     	
     Private Function C2IListRange(Value As Variant) As IListRange: Return Value: End Function
-        	
 End Class

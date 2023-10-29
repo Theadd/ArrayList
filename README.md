@@ -43,7 +43,7 @@ Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid
 
 * Using multidimensional arrays as elements is <u>not</u> supported by `mscorlib.ArrayList` but `ArrayList` seems to have no reason for that, they just work like any other value or reference types when being added as elements. <sup><small>(If anyone encounters with such problems in `ArrayList` please post an issue)</small></sup>
 
-* The `.GetRange` method from `mscorlib.ArrayList` returns a [`Range`]() class instance, which extends the `mscorlib.ArrayList` class so the return of `.GetRange` can be directly assigned to a variable declared as `mscorlib.ArrayList`. In **VBA**/**tB** this can't be achieved (hoping to be wrong for **tB** tho) so you have to declare them as `IListRange` or, just use `Variant`.
+* The `.GetRange` method from `mscorlib.ArrayList` returns a [`Range`]() class instance, which extends the `mscorlib.ArrayList` class so the return of `.GetRange` can be directly assigned to a variable declared as `mscorlib.ArrayList`. In order to achieve this in our `ArrayList` class, it has been declared as a `CoClass`, which gives no-intellisense support, but is expected to be fixed soon.
 
 
 ## **Documentation**

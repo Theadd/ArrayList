@@ -1,8 +1,8 @@
 
 [ ClassId ("E88D5510-C8E5-433D-8DA5-712D8586E0C9") ]
-[ COMCreatable (True) ]
-Public Class ArrayList
-    Implements IArrayList
+[ COMCreatable (False) ]
+Public Class ArrayListClass
+    Implements ArrayList
     
     Private pItems() As Variant
     Private pIndex As Long
@@ -27,11 +27,19 @@ Public Class ArrayList
     End Property
     
     Public Property Get Count() As Long Implements IArrayList.Count: Return pIndex: End Property
-    	
+    
+    Public Property Let Count(ByVal Value As Long)
+        If Value < 0 Then Err.Raise 9
+        If Value > pIndex Then GrowCapacity(Value - pIndex)
+        pIndex = Value
+        pVersion += 1
+    End Property
+    
+    [ Hidden ]
     Public Property Get Version() As Long Implements IArrayList.Version: Return pVersion: End Property
-    	
+    
     Public Property Get Capacity() As Long Implements IArrayList.Capacity: Return UBound(pItems) + 1: End Property
-    	
+    
     Public Property Let Capacity(Value As Long) Implements IArrayList.Capacity: ReDim Preserve pItems(LBound(pItems) To Value - 1): End Property
     [ Hidden ]
     Public Property Get IsFixedSize() As Boolean Implements IArrayList.IsFixedSize: Return False: End Property
@@ -270,7 +278,9 @@ Public Class ArrayList
     
     Public Function GetRange(ByVal Index As Long, ByVal GetCount As Long) As IListRange Implements IArrayList.GetRange
         If Index < 0 Or GetCount < 0 Or pIndex - Index < GetCount Then Err.Raise 9
-        Return New ListRange(Me, Index, GetCount)
+        Dim r As New ListRange
+        r.Bind Me, Index, GetCount
+        Return r
     End Function
     
     Public Sub SetRange(ByVal Index As Long, Target As Variant) Implements IArrayList.SetRange
@@ -319,7 +329,9 @@ Public Class ArrayList
     [ IntegerOverflowChecks (False) ]
     [ Description ("Searches a section of a sorted list. Returns the index of the given value in the list. If not found, returns a negative integer. Use the bitwise operator (Not) to get the index of the first element larger than this one, if any.") ]
     Public Function BinarySearch(ByVal Index As Long, ByVal GetCount As Long, Value As Variant, Optional ByRef Comparer As IComparer = Nothing) As Long Implements IArrayList.BinarySearch
-        Dim lo As Long = Index, hi As Long = Index + GetCount - 1, i As Long
+        Dim lo As Long, hi As Long, i As Long
+        lo = Index
+        hi = Index + GetCount - 1
         If Comparer IsNot Nothing Then
             Do While (lo <= hi)
                 i = lo + ((hi - lo) \ 2)
@@ -360,7 +372,7 @@ Public Class ArrayList
     #End Region
     
     #Region "PRIVATE METHODS"
-    Private Sub Class_Initialize()
+    Public Sub New()
         ReDim pItems(0 To 1)
     End Sub
     
