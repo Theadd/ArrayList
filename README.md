@@ -23,6 +23,8 @@ Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid
 
 ## **Features / Improvements** 
 
+* IntelliSense support.
+
 * Takes less than `0.35 MB` of `VMem` to load on first use instead of the `423 MB` taken by `mscorlib`. VBA apps in **Win32** are limited to `2 GB`, if you also add the non-existing memory deallocation of `mscorlib.ArrayList`, continued operations on mid to large datasets are a dead-end in using `mscorlib.ArrayList`.
 
 * As a __drop-in replacement__, it is expected to provide the exact same output and functionality as when using `mscorlib.ArrayList` whithin `VBA`. Static members such as `.Adapter` or `.Repeat` can't be used from `VBA` so they're not included, nor the `Type` parameter in `.ToArray()`, which can't be used either. Additionally, all other members that can could be called or accessed even though they are totally useless from the `VBA` side, are included but hidden, as in duplicated members with similar names to overcome the missing method overloading feature in `COM`, such as `.Sort_2`.
@@ -39,11 +41,9 @@ Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid
 
 * Provides an advanced `Enumerator` allowing the use of `For Each` within subranges, backwards enumeration, custom iteration steps and direct access to the backing enumerator instance allowing an even wider set of possibilities while iterating the `Enumerator`.
 
-* The [`Enumerator`](https://github.com/Theadd/ArrayList/blob/main/ArrayListLib/Sources/Enumerator.twin#L21) class is publicly accessible so you can reuse it anywhere else in your code.
+* The [`Enumerator`](https://github.com/Theadd/ArrayList/blob/main/ArrayListLib/Sources/Enumerator.twin#L26) class is publicly accessible so you can reuse it anywhere else in your code.
 
 * Using multidimensional arrays as elements is <u>not</u> supported by `mscorlib.ArrayList` but `ArrayList` seems to have no reason for that, they just work like any other value or reference types when being added as elements. <sup><small>(If anyone encounters with such problems in `ArrayList` please post an issue)</small></sup>
-
-* The `.GetRange` method from `mscorlib.ArrayList` returns a [`Range`]() class instance, which extends the `mscorlib.ArrayList` class so the return of `.GetRange` can be directly assigned to a variable declared as `mscorlib.ArrayList`. In order to achieve this in our `ArrayList` class, it has been declared as a `CoClass`, which gives no-intellisense support, but is expected to be fixed soon.
 
 
 ## **Documentation**
