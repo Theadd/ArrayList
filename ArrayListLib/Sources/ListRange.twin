@@ -2,6 +2,7 @@
 [ ClassId ("0A102E9C-9E68-411A-A4B8-E6128FC07721") ]
 [ COMCreatable (False) ]
 Public Class ListRange
+    Implements IArrayList
     Implements ArrayList
     
     Private pList As IArrayList
@@ -10,8 +11,9 @@ Public Class ListRange
     Private pVersion As Long
     Private pItems() As Variant
     
-    Public Sub New(): End Sub
+    Public Sub New() Implements ArrayList.New: End Sub
     
+    [ Hidden ]
     Public Function Bind(TargetList As IArrayList, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant) As ListRange
         Static sa As SAFEARRAY_1D
         If IsMissing(GetCount) Then GetCount = TargetList.Count - Index
@@ -31,36 +33,32 @@ Public Class ListRange
         Return Me
     End Function
     
-    Public Property Get Version() As Long Implements IArrayList.Version
+    [ Hidden ]
+    Public Property Get Version() As Long Implements ArrayList.Version, IArrayList.Version
         Return pVersion
     End Property
     
-    Private Property Let Count(ByVal Value As Long)
-        pIndex = Value
-        PutMem4 ArrPtr(pItems) + SAFEARRAY_CELEMENTS_OFFSET, Value
-    End Property
-    
-    Public Function Add(Value As Variant) As Long Implements IArrayList.Add
+    Public Function Add(Value As Variant) As Long Implements ArrayList.Add, IArrayList.Add
         Add = pIndex
         Insert pIndex, Value
     End Function
     
-    Public Sub AddRange(Target As Variant) Implements IArrayList.AddRange
+    Public Sub AddRange(Target As Variant) Implements ArrayList.AddRange, IArrayList.AddRange
         InsertRange pIndex, Target
     End Sub
     
-    Public Function BinarySearch(ByVal Index As Long, ByVal GetCount As Long, Value As Variant, Comparer As IComparer) As Long Implements IArrayList.BinarySearch
+    Public Function BinarySearch(ByVal Index As Long, ByVal GetCount As Long, Value As Variant, Optional ByRef Comparer As IComparer = Nothing) As Long Implements ArrayList.BinarySearch, IArrayList.BinarySearch
         InternalUpdateRange
         If Index < 0 Or GetCount < 0 Or pIndex - Index < GetCount Then Err.Raise 9
         Dim i As Long = pList.BinarySearch(pBaseIndex + Index, GetCount, Value, Comparer)
         Return If(i >= 0, i - pBaseIndex, i + pBaseIndex)
     End Function
     
-    Public Property Get Capacity() As Long Implements IArrayList.Capacity: Return pList.Capacity: End Property
+    Public Property Get Capacity() As Long Implements ArrayList.Capacity, IArrayList.Capacity: Return pList.Capacity: End Property
     
-    Public Property Let Capacity(Value As Long) Implements IArrayList.Capacity: End Property
+    Public Property Let Capacity(Value As Long) Implements ArrayList.Capacity, IArrayList.Capacity: End Property
     
-    Public Sub Clear() Implements IArrayList.Clear
+    Public Sub Clear() Implements ArrayList.Clear, IArrayList.Clear
         InternalUpdateRange
         If pIndex > 0 Then
             pList.RemoveRange pBaseIndex, pIndex
@@ -69,13 +67,13 @@ Public Class ListRange
         End If
     End Sub
     
-    Public Function Clone() As Variant Implements IArrayList.Clone
+    Public Function Clone() As Variant Implements ArrayList.Clone, IArrayList.Clone
         Dim Target As New ArrayList
         C2IArrayList(Target).CloneTo Target, C2IArrayList(Me), 0, pIndex
         Return Target
     End Function
     
-    Public Function Contains(Value As Variant) As Boolean Implements IArrayList.Contains
+    Public Function Contains(Value As Variant) As Boolean Implements ArrayList.Contains, IArrayList.Contains
         InternalUpdateRange
         Dim i As Long, vt As VbVarType = VarType(Value)
         Select Case vt
@@ -94,7 +92,7 @@ Public Class ListRange
         End Select
     End Function
     
-    Public Sub CopyTo(Target As Variant, Index As Long) Implements IArrayList.CopyTo
+    Public Sub CopyTo(Target As Variant, Index As Long) Implements ArrayList.CopyTo, IArrayList.CopyTo
         InternalUpdateRange
         Select Case VarType(Target)
             Case vbObject
@@ -118,18 +116,25 @@ Public Class ListRange
         End Select
     End Sub
     
-    Public Property Get Count() As Long Implements IArrayList.Count
+    Public Property Get Count() As Long Implements ArrayList.Count, IArrayList.Count
         InternalUpdateRange
         Return pIndex
     End Property
     
+    Private Property Let Count(ByVal Value As Long)
+        pIndex = Value
+        PutMem4 ArrPtr(pItems) + SAFEARRAY_CELEMENTS_OFFSET, Value
+    End Property
+    
+    Private Property Let ArrayList_Count(ByVal Value As Long) Implements ArrayList.Count: Err.Raise 17: End Property
+    
     [ Enumerator ]
-    Public Function GetEnumerator(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional ByVal GetStep As Long = 1, Optional ByRef ThisEnumerator As IEnumerator) As stdole.IUnknown Implements IArrayList.GetEnumerator
+    Public Function GetEnumerator(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional ByVal GetStep As Long = 1, Optional ByRef ThisEnumerator As IEnumerator) As stdole.IUnknown Implements ArrayList.GetEnumerator, IArrayList.GetEnumerator
         If IsMissing(GetCount) Then GetCount = pIndex - Index
         Return New Enumerator(pItems, Index, GetCount, GetStep, ThisEnumerator)
     End Function
     
-    Public Function GetRange(ByVal Index As Long, ByVal GetCount As Long) As IListRange Implements IArrayList.GetRange
+    Public Function GetRange(ByVal Index As Long, ByVal GetCount As Long) As IListRange Implements ArrayList.GetRange, IArrayList.GetRange
         InternalUpdateRange
         If Index < 0 Or GetCount < 0 Or pIndex - Index < GetCount Then Err.Raise 9
         With New ListRange
@@ -137,7 +142,7 @@ Public Class ListRange
         End With
     End Function
 
-    Public Function IndexOf(Value As Variant, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant) As Long Implements IArrayList.IndexOf
+    Public Function IndexOf(Value As Variant, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant) As Long Implements ArrayList.IndexOf, IArrayList.IndexOf
         InternalUpdateRange
         If IsMissing(GetCount) Then GetCount = pIndex - Index
         If Index < 0 Or Index > pIndex Or GetCount < 0 Or (Index > pIndex - GetCount) Then Err.Raise 9
@@ -145,14 +150,14 @@ Public Class ListRange
         Return If(i >= 0, i - pBaseIndex, -1)
     End Function
     
-    Public Sub Insert(ByVal Index As Long, Value As Variant) Implements IArrayList.Insert
+    Public Sub Insert(ByVal Index As Long, Value As Variant) Implements ArrayList.Insert, IArrayList.Insert
         InternalUpdateRange
         pList.Insert pBaseIndex + Index, Value
         Count = pIndex + 1
         pVersion += 1
     End Sub
     
-    Public Sub InsertRange(ByVal Index As Long, Target As Variant) Implements IArrayList.InsertRange
+    Public Sub InsertRange(ByVal Index As Long, Target As Variant) Implements ArrayList.InsertRange, IArrayList.InsertRange
         InternalUpdateRange
         Dim GetCount As Long = If(IsObject(Target), Target.Count, (UBound(Target) - LBound(Target)) + 1)
         pList.InsertRange pBaseIndex + Index, Target
@@ -161,29 +166,29 @@ Public Class ListRange
     End Sub
     
     [ Hidden ]
-    Public Property Get IsFixedSize() As Boolean Implements IArrayList.IsFixedSize: Return False: End Property
+    Public Property Get IsFixedSize() As Boolean Implements ArrayList.IsFixedSize, IArrayList.IsFixedSize: Return False: End Property
     [ Hidden ]
-    Public Property Get IsReadOnly() As Boolean Implements IArrayList.IsReadOnly: Return False: End Property
+    Public Property Get IsReadOnly() As Boolean Implements ArrayList.IsReadOnly, IArrayList.IsReadOnly: Return False: End Property
     [ Hidden ]
-    Public Property Get IsSynchronized() As Boolean Implements IArrayList.IsSynchronized: Return False: End Property
+    Public Property Get IsSynchronized() As Boolean Implements ArrayList.IsSynchronized, IArrayList.IsSynchronized: Return False: End Property
     [ Hidden ]
-    Public Property Get SyncRoot() As Variant Implements IArrayList.SyncRoot: Return Nothing: End Property
+    Public Property Get SyncRoot() As Variant Implements ArrayList.SyncRoot, IArrayList.SyncRoot: Return Nothing: End Property
     
     [ DefaultMember ]
-    Public Property Get Item(ByVal Index As Long) As Variant Implements IArrayList.Item
+    Public Property Get Item(ByVal Index As Long) As Variant Implements ArrayList.Item, IArrayList.Item
         InternalUpdateRange
         If Index < 0 Or Index >= pIndex Then Err.Raise 9
         Return pItems(Index)
     End Property
     
-    Public Property Let Item(ByVal Index As Long, Value As Variant) Implements IArrayList.Item
+    Public Property Let Item(ByVal Index As Long, Value As Variant) Implements ArrayList.Item, IArrayList.Item
         InternalUpdateRange
         If Index < 0 Or Index >= pIndex Then Err.Raise 9
         pItems(Index) = Value
         pVersion += 1
     End Property
     
-    Public Property Set Item(ByVal Index As Long, Value As Variant) Implements IArrayList.Item
+    Public Property Set Item(ByVal Index As Long, Value As Variant) Implements ArrayList.Item, IArrayList.Item
         InternalUpdateRange
         If Index < 0 Or Index >= pIndex Then Err.Raise 9
         Set pItems(Index) = Value
@@ -192,7 +197,12 @@ Public Class ListRange
     
     [ Hidden ]
     [ Description ("CAUTION: Limit usage only in For Each In .Items calls, do NOT assign the return value of .Items to another variable unless you know what you're doing.") ]
-    Public Function Items() As Variant() Implements IArrayList.Items
+    Public Function Items() As Variant() Implements ArrayList.Items, IArrayList.Items
+        /* Returns a Variant Array pointing to the same memory as the internal array of this list 
+         * without increasing the reference count of byref elements within the list.
+         * If you assign this array to a variable in your code, you must remove the reference
+         * before it goes out of scope to prevent double deallocation of byref values.
+         */
         Static sa As SAFEARRAY_1D
         InternalUpdateRange
         With sa
@@ -206,7 +216,7 @@ Public Class ListRange
         VBA.PutMemPtr VarPtrArr(Items), VarPtr(sa)
     End Function
     
-    Public Function LastIndexOf(Value As Variant, ByVal Index As Variant, ByVal GetCount As Variant) As Long Implements IArrayList.LastIndexOf
+    Public Function LastIndexOf(Value As Variant, ByVal Index As Variant, ByVal GetCount As Variant) As Long Implements ArrayList.LastIndexOf, IArrayList.LastIndexOf
         InternalUpdateRange
         If Index >= pIndex Or Index < 0 Then Err.Raise 9
         If pIndex > 0 Then
@@ -216,12 +226,12 @@ Public Class ListRange
         Return -1
     End Function
     
-    Public Sub Remove(Value As Variant) Implements IArrayList.Remove
+    Public Sub Remove(Value As Variant) Implements ArrayList.Remove, IArrayList.Remove
         Dim Index As Long = IndexOf(Value, 0)
         If Index >= 0 Then RemoveAt Index
     End Sub
     
-    Public Sub RemoveAt(ByVal Index As Long) Implements IArrayList.RemoveAt
+    Public Sub RemoveAt(ByVal Index As Long) Implements ArrayList.RemoveAt, IArrayList.RemoveAt
         InternalUpdateRange
         If Index < 0 Or Index >= pIndex Then Err.Raise 9
         pList.RemoveAt pBaseIndex + Index
@@ -229,7 +239,7 @@ Public Class ListRange
         pVersion += 1
     End Sub
     
-    Public Sub RemoveRange(ByVal Index As Long, ByVal GetCount As Long) Implements IArrayList.RemoveRange
+    Public Sub RemoveRange(ByVal Index As Long, ByVal GetCount As Long) Implements ArrayList.RemoveRange, IArrayList.RemoveRange
         InternalUpdateRange
         If Index < 0 Or GetCount < 0 Or (pIndex - Index < GetCount) Then Err.Raise 9
         If GetCount > 0 Then
@@ -239,7 +249,7 @@ Public Class ListRange
         End If
     End Sub
     
-    Public Sub Reverse(ByVal Index As Long, ByVal GetCount As Variant) Implements IArrayList.Reverse
+    Public Sub Reverse(ByVal Index As Long, ByVal GetCount As Variant) Implements ArrayList.Reverse, IArrayList.Reverse
         InternalUpdateRange
         If IsMissing(GetCount) Then GetCount = pIndex - Index
         If Index < 0 Or GetCount < 0 Or (pIndex - Index < GetCount) Then Err.Raise 9
@@ -247,14 +257,14 @@ Public Class ListRange
         pVersion += 1
     End Sub
     
-    Public Sub SetRange(ByVal Index As Long, Target As Variant) Implements IArrayList.SetRange
+    Public Sub SetRange(ByVal Index As Long, Target As Variant) Implements ArrayList.SetRange, IArrayList.SetRange
         InternalUpdateRange
         If Index < 0 Or Index >= pIndex Then Err.Raise 9
         pList.SetRange pBaseIndex + Index, Target
         pVersion += 1
     End Sub
     
-    Public Sub Sort(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional Comparer As IComparer = Nothing) Implements IArrayList.Sort
+    Public Sub Sort(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional Comparer As IComparer = Nothing) Implements ArrayList.Sort, IArrayList.Sort
         InternalUpdateRange
         If IsMissing(GetCount) Then GetCount = pIndex - Index
         If Index < 0 Or GetCount < 0 Or (pIndex - Index < GetCount) Then Err.Raise 9
@@ -262,7 +272,7 @@ Public Class ListRange
         pVersion += 1
     End Sub
     
-    Public Function ToArray() As Variant() Implements IArrayList.ToArray
+    Public Function ToArray() As Variant() Implements ArrayList.ToArray, IArrayList.ToArray
         InternalUpdateRange
         Dim t() As Variant
         If pIndex = 0 Then Return Array()
@@ -271,6 +281,23 @@ Public Class ListRange
         ReassignArrayTo ToArray, t
     End Function
     
+    #Region "HIDDEN METHODS IN MSCORLIB"
+    [ Hidden ]
+    Public Function IndexOf_2(ByRef Value As Variant, ByVal Index As Long, ByVal GetCount As Long) As Long Implements ArrayList.IndexOf_2: Return IndexOf(Value, Index, GetCount): End Function
+    [ Hidden ]
+    Public Function IndexOf_3(ByRef Value As Variant) As Long Implements ArrayList.IndexOf_3: Return IndexOf(Value, 0): End Function
+    [ Hidden ]
+    Public Sub Sort_2(ByRef Comparer As IComparer) Implements ArrayList.Sort_2: Sort 0, , Comparer: End Sub
+    [ Hidden ]
+    Public Function BinarySearch_2(ByRef Value As Variant) As Long Implements ArrayList.BinarySearch_2: Return BinarySearch(0, pIndex, Value): End Function
+    [ Hidden ]
+    Public Function BinarySearch_3(ByRef Value As Variant, ByRef Comparer As IComparer) As Long Implements ArrayList.BinarySearch_3: Return BinarySearch(0, pIndex, Value, Comparer): End Function
+    [ Hidden ]
+    Public Function LastIndexOf_2(ByRef Value As Variant, ByVal Index As Long) As Long Implements ArrayList.LastIndexOf_2: Return LastIndexOf(Value, Index, Index + 1): End Function
+    [ Hidden ]
+    Public Function LastIndexOf_3(ByRef Value As Variant, ByVal Index As Long, ByVal GetCount As Long) As Long Implements ArrayList.LastIndexOf_3: Return LastIndexOf(Value, Index, GetCount): End Function
+    #End Region
+    
     Private Sub Class_Terminate()
         On Error Resume Next
         PutMemPtr VarPtrArr(pItems), vbNullPtr
@@ -278,7 +305,7 @@ Public Class ListRange
         On Error GoTo 0
     End Sub
     
-    Private Function GetAddressOfItemAt(Index As Long) As LongPtr Implements IArrayList.GetAddressOfItemAt
+    Private Function GetAddressOfItemAt(Index As Long) As LongPtr Implements ArrayList.GetAddressOfItemAt, IArrayList.GetAddressOfItemAt
         Return VarPtr(pItems(Index))
     End Function
     
@@ -286,7 +313,7 @@ Public Class ListRange
         If pVersion <> pList.Version Then Err.Raise vbObjectError + 988425, , "This ArrayList range is no longer valid."
     End Sub
     
-    Private Sub CloneTo(ByVal Target As IArrayList, Source As IArrayList, ByVal Index As Long, ByVal GetCount As Long) Implements IArrayList.CloneTo: End Sub
+    Private Sub CloneTo(ByVal Target As IArrayList, Source As IArrayList, ByVal Index As Long, ByVal GetCount As Long) Implements ArrayList.CloneTo, IArrayList.CloneTo: End Sub
     
     /* [ CompilerOptions ("+llvm,+optimize") ] */
     [ ArrayBoundsChecks (False) ]
@@ -298,4 +325,5 @@ Public Class ListRange
     Private Function C2IArrayList(Value As Variant) As IArrayList: Return Value: End Function
     	
     Private Function C2IListRange(Value As Variant) As IListRange: Return Value: End Function
+
 End Class

@@ -1,8 +1,8 @@
 
 [ ClassId ("E88D5510-C8E5-433D-8DA5-712D8586E0C9") ]
-[ COMCreatable (False) ]
-Public Class ArrayListClass
-    Implements ArrayList
+[ COMCreatable (True) ]
+Public Class ArrayList
+    Implements IArrayList
     
     Private pItems() As Variant
     Private pIndex As Long
@@ -53,6 +53,11 @@ Public Class ArrayListClass
     [ Hidden ]
     [ Description ("CAUTION: Limit usage only in For Each In .Items calls, do NOT assign the return value of .Items to another variable unless you know what you're doing.") ]
     Public Function Items() As Variant() Implements IArrayList.Items
+        /* Returns a Variant Array pointing to the same memory as the internal array of this list 
+         * without increasing the reference count of byref elements within the list.
+         * If you assign this array to a variable in your code, you must remove the reference
+         * before it goes out of scope to prevent double deallocation of byref values.
+         */
         Static sa As SAFEARRAY_1D
         With sa
             .cDims = 1
@@ -279,8 +284,7 @@ Public Class ArrayListClass
     Public Function GetRange(ByVal Index As Long, ByVal GetCount As Long) As IListRange Implements IArrayList.GetRange
         If Index < 0 Or GetCount < 0 Or pIndex - Index < GetCount Then Err.Raise 9
         Dim r As New ListRange
-        r.Bind Me, Index, GetCount
-        Return r
+        Set GetRange = r.Bind(Me, Index, GetCount)
     End Function
     
     Public Sub SetRange(ByVal Index As Long, Target As Variant) Implements IArrayList.SetRange
@@ -387,7 +391,7 @@ Public Class ArrayListClass
     	
     Private Function C2IListRange(Value As Variant) As IListRange: Return Value: End Function
     
-    Private Function GetAddressOfItemAt(Index As Long) As LongPtr Implements IArrayList.GetAddressOfItemAt: Return VarPtr(pItems(Index)): End Function
+    Friend Function GetAddressOfItemAt(Index As Long) As LongPtr Implements IArrayList.GetAddressOfItemAt: Return VarPtr(pItems(Index)): End Function
     
     #If Win64 Then
         Private Type UDTVariantB
@@ -538,7 +542,7 @@ Public Class ArrayListClass
         If (l0 < r) Then QuickSortV2 l0, r
     End Sub
     
-    Private Sub CloneTo(ByVal Target As IArrayList, Source As IArrayList, ByVal Index As Long, ByVal GetCount As Long) Implements IArrayList.CloneTo
+    Friend Sub CloneTo(ByVal Target As IArrayList, Source As IArrayList, ByVal Index As Long, ByVal GetCount As Long) Implements IArrayList.CloneTo
         pVersion = Source.Version
         Capacity = GetCount
         VariantArrayClone VarPtr(pItems(0)), Source.GetAddressOfItemAt(Index), GetCount

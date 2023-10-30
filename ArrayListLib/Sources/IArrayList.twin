@@ -77,20 +77,3 @@ Public Interface IArrayList Extends IListRange
     Function LastIndexOf(ByRef Value As Variant, Optional ByVal Index As Variant, Optional ByVal GetCount As Variant) As Long
     Sub Reverse(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant)
 End Interface
-
-[ CoClassId ("229DE972-5045-4F2D-BFF8-BDFD1F6F32F6") ]
-[ CoClassCustomConstructor ("ArrayListFactory.CreateArrayList") ]
-[ COMCreatable ]
-Public CoClass ArrayList
-    [ Default ] Interface IArrayList
-    Interface IArrayList
-End CoClass
-
-Module ArrayListFactory
-    Public Function CreateArrayList(ByRef out As IArrayList) As Long
-        Set out = New ArrayListClass
-        ' Const S_OK As Long = 0
-        ' Return S_OK
-    End Function
-End Module
-

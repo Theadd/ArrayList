@@ -87,5 +87,5 @@ Module LibMemory
             Err.Raise 5, "ArrPtr", "Array required"
         End If
     End Function
-    
+
 End Module
