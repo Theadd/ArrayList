@@ -18,7 +18,7 @@
 
 `VBA` / `VB6` mscorlib's **ArrayList drop-in replacement** with proper memory management and orders of magnitude faster than `mscorlib.ArrayList`, making use of [twinBASIC](https://github.com/twinbasic/twinbasic)'s new language features and memory management techniques from [VBA-MemoryTools](https://github.com/cristianbuse/VBA-MemoryTools).
 
-Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid of the `423 MB VMem` overheat added to VBA projects when using its `ArrayList` implementation. But it also turned out to exceed the speed performance of `mscorlib.ArrayList` by far, along with a proper memory release/deallocation when destroyed or it goes out of scope. Which can't even be manually achieved with `mscorlib.ArrayList` as setting it to `Nothing` or `.Clear` 'ing it doesn't free any memory.
+Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid of the `423 MB VMem` overhead added to VBA projects when using its `ArrayList` implementation. But it also turned out to exceed the speed performance of `mscorlib.ArrayList` by far, along with a proper memory release/deallocation when destroyed or it goes out of scope. Which can't even be manually achieved with `mscorlib.ArrayList` as setting it to `Nothing` or `.Clear` 'ing it doesn't free any memory.
 
 
 ## **Features / Improvements** 
