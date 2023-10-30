@@ -14,7 +14,6 @@ End Interface
 [ Description ("Base interface for all collections") ]
 Public Interface ICollection Extends IEnumerable
     Sub CopyTo(Target As Variant, Index As Long)
-    [ DispId (1) ]
     Property Get Count() As Long
     Property Get SyncRoot() As Variant
     Property Get IsSynchronized() As Boolean
@@ -28,12 +27,10 @@ Public Interface IList Extends ICollection
     Property Let Item(ByVal Index As Long, Value As Variant)
     Property Set Item(ByVal Index As Long, Value As Variant)
     [ Description ("Adds an item to the list. The return value is the position the new element was inserted in.") ]
-    [ DispId (2) ]
     Function Add(Value As Variant) As Long
     [ Description ("Returns whether the list contains a particular item.") ]
     Function Contains(Value As Variant) As Boolean
     [ Description ("Removes all items from the list.") ]
-    [ DispId (3) ]
     Sub Clear()
     Property Get IsReadOnly() As Boolean
     Property Get IsFixedSize() As Boolean
@@ -44,7 +41,6 @@ Public Interface IList Extends ICollection
     [ Description ("Removes an item from the list.") ]
     Sub Remove(Value As Variant)
     [ Description ("Removes the item at position index.") ]
-    [ DispId (4) ]
     Sub RemoveAt(ByVal Index As Long)
 End Interface
 
@@ -67,7 +63,7 @@ End Interface
 [ InterfaceId ("1043D433-27BB-40F7-9255-50F4724FAB94") ]
 Public Interface IArrayList Extends IListRange
     Implements ICloneable
-
+    
     Function Clone() As Variant Implements ICloneable.Clone
     [ Hidden ]
     Property Get Version() As Long
@@ -81,4 +77,3 @@ Public Interface IArrayList Extends IListRange
     Function LastIndexOf(ByRef Value As Variant, Optional ByVal Index As Variant, Optional ByVal GetCount As Variant) As Long
     Sub Reverse(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant)
 End Interface
-

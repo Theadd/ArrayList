@@ -1,4 +1,11 @@
 *.twin linguist-language=vb6
-*.twinproj linguist-language=vb6
+*.twinproj -text linguist-language=vb6
+*.twinpack -text linguist-language=vb6
 *.odl linguist-language=cpp
 *.idl linguist-language=cpp
+*.dll binary
+*.ocx binary
+# Fix syntax highlighting on GitHub to allow comments
+*.json linguist-language=JSON-with-Comments
+*.md text diff=markdown
+*.mdx text diff=markdown

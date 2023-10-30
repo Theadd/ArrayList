@@ -1,18 +1,19 @@
 # [**ArrayList**](https://github.com/Theadd/ArrayList)
 
 <a href="https://github.com/Theadd/ArrayList">
-  <img height="28em" align="center" src="https://img.shields.io/badge/GitHub-333?style=for-the-badge&logo=&logoColor=white" alt="Github Repository Badge" />
+  <img height="28em" align="center" src="https://img.shields.io/badge/GitHub-22272E?style=for-the-badge&logo=&logoColor=white" alt="Github Repository Badge" />
 </a>
 <a href="https://github.com/Theadd/ArrayList/issues">
-  <img height="28em" align="center" src="https://img.shields.io/badge/ISSUES-333?style=for-the-badge&logo=&logoColor=white" alt="Issues Badge" />
+  <img height="28em" align="center" src="https://img.shields.io/badge/ISSUES-22272E?style=for-the-badge&logo=&logoColor=white" alt="Issues Badge" />
 </a>
 <a href="https://github.com/Theadd/ArrayList/releases/latest">
-  <img height="28em" align="center" src="https://img.shields.io/badge/RELEASES-333?style=for-the-badge&logo=&logoColor=white" alt="Releases Badge" />
+  <img height="28em" align="center" src="https://img.shields.io/badge/RELEASES-22272E?style=for-the-badge&logo=&logoColor=white" alt="Releases Badge" />
 </a>
 <a href="https://github.com/Theadd/ArrayList/blob/main/LICENSE">
-  <img height="28em" align="center" src="https://img.shields.io/badge/UNLICENSE-333?style=for-the-badge&logo=&logoColor=white" alt="Unlicense Badge" />
+  <img height="28em" align="center" src="https://img.shields.io/badge/UNLICENSE-22272E?style=for-the-badge&logo=&logoColor=white" alt="Unlicense Badge" />
 </a>
 
+<br/>
 <br/>
 
 `VBA` / `VB6` mscorlib's **ArrayList drop-in replacement** with proper memory management and orders of magnitude faster than `mscorlib.ArrayList`, making use of [twinBASIC](https://github.com/twinbasic/twinbasic)'s new language features and memory management techniques from [VBA-MemoryTools](https://github.com/cristianbuse/VBA-MemoryTools).
@@ -20,11 +21,13 @@
 Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid of the `423 MB VMem` overheat added to VBA projects when using its `ArrayList` implementation. But it also turned out to exceed the speed performance of `mscorlib.ArrayList` by far, along with a proper memory release/deallocation when destroyed or it goes out of scope. Which can't even be manually achieved with `mscorlib.ArrayList` as setting it to `Nothing` or `.Clear` 'ing it doesn't free any memory.
 
 
-## **Features**
+## **Features / Improvements** 
 
-* Less than `0.35 MB VMem` overheat _(vs `423 MB` of `mscorlib`)_
+* IntelliSense support.
 
-* __Drop-in replacement__ - It's expected to provide the exact same functionality as `mscorlib.ArrayList` when used in `VBA`.
+* Takes less than `0.35 MB` of `VMem` to load on first use instead of the `423 MB` taken by `mscorlib`. VBA apps in **Win32** are limited to `2 GB`, if you also add the non-existing memory deallocation of `mscorlib.ArrayList`, continued operations on mid to large datasets are a dead-end in using `mscorlib.ArrayList`.
+
+* As a __drop-in replacement__, it is expected to provide the exact same output and functionality as when using `mscorlib.ArrayList` whithin `VBA`. Static members such as `.Adapter` or `.Repeat` can't be used from `VBA` so they're not included, nor the `Type` parameter in `.ToArray()`, which can't be used either. Additionally, all other members that can could be called or accessed even though they are totally useless from the `VBA` side, are included but hidden, as in duplicated members with similar names to overcome the missing method overloading feature in `COM`, such as `.Sort_2`.
 
 * Unlike `mscorlib.ArrayList`, it allows plain `VBA Arrays` and other enumerable objects as input in parameters expecting a collection-like object _(Of `ICollection` Type in `mscorlib`'s [ArrayList.cs](https://referencesource.microsoft.com/#mscorlib/system/collections/arraylist.cs,215))_.
   ```vb
@@ -38,8 +41,14 @@ Initially, this drop-in replacement for `mscorlib.ArrayList` was just to get rid
 
 * Provides an advanced `Enumerator` allowing the use of `For Each` within subranges, backwards enumeration, custom iteration steps and direct access to the backing enumerator instance allowing an even wider set of possibilities while iterating the `Enumerator`.
 
-* The [`Enumerator`](https://github.com/Theadd/ArrayList/blob/main/ArrayListLib/Sources/Enumerator.twin#L21) class is publicly accessible so you can reuse it anywhere else in your code.
+* The [`Enumerator`](https://github.com/Theadd/ArrayList/blob/main/ArrayListLib/Sources/Enumerator.twin#L26) class is publicly accessible so you can reuse it anywhere else in your code.
 
+* Using multidimensional arrays as elements is <u>not</u> supported by `mscorlib.ArrayList` but `ArrayList` seems to have no reason for that, they just work like any other value or reference types when being added as elements. <sup><small>(If anyone encounters with such problems in `ArrayList` please post an issue)</small></sup>
+
+
+## **Documentation**
+
+* `ArrayList` docs are available [here](Docs/ArrayList.md) but, as a drop-in replacement, you can also use the ones from the official [`.NET Documentation`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=netframework-4.7.2) which has lots of usage examples, just ignore `static` members as they can't be called from `VBA`. You might also like to have a look directly at the [source code](https://referencesource.microsoft.com/#mscorlib/system/collections/arraylist.cs) of `mscorlib.ArrayList` in **CSharp**.  
 
 
 ## **Performance Tests Results**

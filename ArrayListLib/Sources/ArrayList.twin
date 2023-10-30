@@ -27,11 +27,19 @@ Public Class ArrayList
     End Property
     
     Public Property Get Count() As Long Implements IArrayList.Count: Return pIndex: End Property
-    	
+    
+    Public Property Let Count(ByVal Value As Long)
+        If Value < 0 Then Err.Raise 9
+        If Value > pIndex Then GrowCapacity(Value - pIndex)
+        pIndex = Value
+        pVersion += 1
+    End Property
+    
+    [ Hidden ]
     Public Property Get Version() As Long Implements IArrayList.Version: Return pVersion: End Property
-    	
+    
     Public Property Get Capacity() As Long Implements IArrayList.Capacity: Return UBound(pItems) + 1: End Property
-    	
+    
     Public Property Let Capacity(Value As Long) Implements IArrayList.Capacity: ReDim Preserve pItems(LBound(pItems) To Value - 1): End Property
     [ Hidden ]
     Public Property Get IsFixedSize() As Boolean Implements IArrayList.IsFixedSize: Return False: End Property
@@ -45,6 +53,11 @@ Public Class ArrayList
     [ Hidden ]
     [ Description ("CAUTION: Limit usage only in For Each In .Items calls, do NOT assign the return value of .Items to another variable unless you know what you're doing.") ]
     Public Function Items() As Variant() Implements IArrayList.Items
+        /* Returns a Variant Array pointing to the same memory as the internal array of this list 
+         * without increasing the reference count of byref elements within the list.
+         * If you assign this array to a variable in your code, you must remove the reference
+         * before it goes out of scope to prevent double deallocation of byref values.
+         */
         Static sa As SAFEARRAY_1D
         With sa
             .cDims = 1
@@ -270,7 +283,8 @@ Public Class ArrayList
     
     Public Function GetRange(ByVal Index As Long, ByVal GetCount As Long) As IListRange Implements IArrayList.GetRange
         If Index < 0 Or GetCount < 0 Or pIndex - Index < GetCount Then Err.Raise 9
-        Return New ListRange(Me, Index, GetCount)
+        Dim r As New ListRange
+        Set GetRange = r.Bind(Me, Index, GetCount)
     End Function
     
     Public Sub SetRange(ByVal Index As Long, Target As Variant) Implements IArrayList.SetRange
@@ -362,7 +376,7 @@ Public Class ArrayList
     #End Region
     
     #Region "PRIVATE METHODS"
-    Private Sub Class_Initialize()
+    Public Sub New()
         ReDim pItems(0 To 1)
     End Sub
     
@@ -377,7 +391,7 @@ Public Class ArrayList
     	
     Private Function C2IListRange(Value As Variant) As IListRange: Return Value: End Function
     
-    Private Function GetAddressOfItemAt(Index As Long) As LongPtr Implements IArrayList.GetAddressOfItemAt: Return VarPtr(pItems(Index)): End Function
+    Friend Function GetAddressOfItemAt(Index As Long) As LongPtr Implements IArrayList.GetAddressOfItemAt: Return VarPtr(pItems(Index)): End Function
     
     #If Win64 Then
         Private Type UDTVariantB
@@ -528,7 +542,7 @@ Public Class ArrayList
         If (l0 < r) Then QuickSortV2 l0, r
     End Sub
     
-    Private Sub CloneTo(ByVal Target As IArrayList, Source As IArrayList, ByVal Index As Long, ByVal GetCount As Long) Implements IArrayList.CloneTo
+    Friend Sub CloneTo(ByVal Target As IArrayList, Source As IArrayList, ByVal Index As Long, ByVal GetCount As Long) Implements IArrayList.CloneTo
         pVersion = Source.Version
         Capacity = GetCount
         VariantArrayClone VarPtr(pItems(0)), Source.GetAddressOfItemAt(Index), GetCount
