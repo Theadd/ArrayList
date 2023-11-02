@@ -31,6 +31,7 @@ Public Class Enumerator
     Private Items() As Variant
     Private CStep As Long
     Private NStep As Long
+    Private IsEnumerating As Boolean
     Private Const E_INVALIDARGS As Long = &H80070057
     Private Const S_OK As Long = 0
     Private Const S_FALSE As Long = 1
@@ -53,6 +54,8 @@ Public Class Enumerator
         PutMem4 ArrPtr(Items) + SAFEARRAY_CELEMENTS_OFFSET, Value
     End Property
     
+    Public Property Get IsAvailable() As Boolean: IsAvailable = Not IsEnumerating: End Property
+    
     Public Sub New()
     End Sub
     
@@ -74,8 +77,13 @@ Public Class Enumerator
         End With
         VBA.PutMemPtr VarPtrArr(Items), VarPtr(sa)
         CStep = GetStep
+        NStep = 0
         MaxValue = GetCount
-        If CStep < 0 Then CIndex = GetCount - 1
+        If CStep < 0 Then
+            CIndex = GetCount - 1
+        Else
+            CIndex = 0
+        End If
     End Sub
     
     [ Enumerator ]
@@ -98,6 +106,7 @@ Public Class Enumerator
                 Err.ReturnHResult = S_OK
             Else
                 If VarPtr(pceltFetched) <> 0 Then pceltFetched = 0
+                IsEnumerating = False
                 Err.ReturnHResult = S_FALSE
             End If
         End If
@@ -114,6 +123,8 @@ Public Class Enumerator
 
     Private Sub Reset() Implements IEnumerator.Reset
         CIndex = If(CStep < 0, MaxValue - 1, 0)
+        NStep = 0
+        IsEnumerating = True
     End Sub
 
     Private Sub Clone(ByRef ppenum As IEnumVARIANT) Implements IEnumerator.Clone
