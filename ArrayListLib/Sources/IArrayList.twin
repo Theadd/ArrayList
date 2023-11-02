@@ -35,7 +35,7 @@ Public Interface IList Extends ICollection
     Property Get IsReadOnly() As Boolean
     Property Get IsFixedSize() As Boolean
     [ Description ("Returns the index of a particular item. Returns -1 if the item isn't in the list.") ]
-    Function IndexOf(Value As Variant, Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant) As Long
+    Function IndexOf(Value As Variant, Optional ByVal Index As Variant, Optional ByVal GetCount As Variant) As Long
     [ Description ("Inserts value into the list at position Index. Index must be non-negative and less than or equal to the number of elements in the list. If Index equals the number of items in the list, then value is appended to the end.") ]
     Sub Insert(ByVal Index As Long, Value As Variant)
     [ Description ("Removes an item from the list.") ]
@@ -54,7 +54,7 @@ Public Interface IListRange Extends IList
     Sub SetRange(ByVal Index As Long, Target As Variant)
     Function ToArray() As Variant()
     [ Description ("Sorts the elements in a section of this list. The sort compares the elements to each other using the given IComparer interface.") ]
-    Sub Sort(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant, Optional ByRef Comparer As IComparer = Nothing)
+    Sub Sort(Optional ByVal Index As Variant, Optional ByVal GetCount As Variant, Optional ByRef Comparer As IComparer = Nothing)
     Function BinarySearch(ByVal Index As Long, ByVal GetCount As Long, ByRef Value As Variant, Optional ByRef Comparer As IComparer = Nothing) As Long
     [ Hidden ]
     Function GetAddressOfItemAt(Index As Long) As LongPtr
@@ -65,6 +65,8 @@ Public Interface IArrayList Extends IListRange
     Implements ICloneable
     
     Function Clone() As Variant Implements ICloneable.Clone
+    Property Get BaseIndex() As Long
+    Property Let BaseIndex(Value As Long)
     [ Hidden ]
     Property Get Version() As Long
     Property Get Capacity() As Long
@@ -75,5 +77,5 @@ Public Interface IArrayList Extends IListRange
     [ Hidden ]
     Sub CloneTo(ByVal Target As IArrayList, ByRef Source As IArrayList, ByVal Index As Long, ByVal GetCount As Long)
     Function LastIndexOf(ByRef Value As Variant, Optional ByVal Index As Variant, Optional ByVal GetCount As Variant) As Long
-    Sub Reverse(Optional ByVal Index As Long = 0, Optional ByVal GetCount As Variant)
+    Sub Reverse(Optional ByVal Index As Variant, Optional ByVal GetCount As Variant)
 End Interface

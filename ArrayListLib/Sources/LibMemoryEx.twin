@@ -30,14 +30,14 @@ Public Module LibMemoryEx
         With sASrc
             .cDims = 1
             .cbElements = ArrayElementSize
-            .fFeatures = IIf(ArrayElementSize = VARIANT_SIZE, FADF_VARIANT, 0)
+            .fFeatures = Iif(ArrayElementSize = VARIANT_SIZE, FADF_VARIANT, 0)
             .pvData = SourceAddress
             .rgsabound0.cElements = GetCount
         End With
         With sADst
             .cDims = 1
             .cbElements = ArrayElementSize
-            .fFeatures = IIf(ArrayElementSize = VARIANT_SIZE, FADF_VARIANT Or FADF_EMBEDDED, FADF_EMBEDDED)
+            .fFeatures = Iif(ArrayElementSize = VARIANT_SIZE, FADF_VARIANT Or FADF_EMBEDDED, FADF_EMBEDDED)
             .pvData = DestinationAddress
             .rgsabound0.cElements = GetCount
         End With
