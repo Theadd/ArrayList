@@ -53,6 +53,7 @@ Public Interface IListRange Extends IList
     Sub RemoveRange(ByVal Index As Long, ByVal GetCount As Long)
     Sub SetRange(ByVal Index As Long, Target As Variant)
     Function ToArray() As Variant()
+    Function ToString(TextQualifier As String) As String
     [ Description ("Sorts the elements in a section of this list. The sort compares the elements to each other using the given IComparer interface.") ]
     Sub Sort(Optional ByVal Index As Variant, Optional ByVal GetCount As Variant, Optional ByRef Comparer As IComparer = Nothing)
     Function BinarySearch(ByVal Index As Long, ByVal GetCount As Long, ByRef Value As Variant, Optional ByRef Comparer As IComparer = Nothing) As Long
@@ -62,9 +63,6 @@ End Interface
 
 [ InterfaceId ("1043D433-27BB-40F7-9255-50F4724FAB94") ]
 Public Interface IArrayList Extends IListRange
-    Implements ICloneable
-    
-    Function Clone() As Variant Implements ICloneable.Clone
     Property Get BaseIndex() As Long
     Property Let BaseIndex(Value As Long)
     [ Hidden ]

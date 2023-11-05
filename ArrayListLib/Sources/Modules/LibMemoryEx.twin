@@ -30,14 +30,14 @@ Public Module LibMemoryEx
         With sASrc
             .cDims = 1
             .cbElements = ArrayElementSize
-            .fFeatures = Iif(ArrayElementSize = VARIANT_SIZE, FADF_VARIANT, 0)
+            .fFeatures = IIf(ArrayElementSize = VARIANT_SIZE, FADF_VARIANT, 0)
             .pvData = SourceAddress
             .rgsabound0.cElements = GetCount
         End With
         With sADst
             .cDims = 1
             .cbElements = ArrayElementSize
-            .fFeatures = Iif(ArrayElementSize = VARIANT_SIZE, FADF_VARIANT Or FADF_EMBEDDED, FADF_EMBEDDED)
+            .fFeatures = IIf(ArrayElementSize = VARIANT_SIZE, FADF_VARIANT Or FADF_EMBEDDED, FADF_EMBEDDED)
             .pvData = DestinationAddress
             .rgsabound0.cElements = GetCount
         End With
@@ -109,5 +109,5 @@ Public Module LibMemoryEx
             VBA.PutMem4 Target + (Target - Source), lbs1
         End If
     End Sub
-    
+
 End Module
