@@ -307,8 +307,8 @@ Public Class ArrayList
         ReassignArrayTo ToArray, t
     End Function
     
-    Public Function ToString(Optional TextQualifier As String = "'") As String Implements IArrayList.ToString
-        Return CommonModule.Stringify(Me, TextQualifier)
+    Public Function ToString(Optional TextQualifier As String = """", Optional ByVal UseNullAsEmpty As Boolean = True) As String Implements IArrayList.ToString
+        Return CommonModule.Stringify(Me, TextQualifier, UseNullAsEmpty)
     End Function
     
     Public Sub AddRange(Target As Variant) Implements IArrayList.AddRange
