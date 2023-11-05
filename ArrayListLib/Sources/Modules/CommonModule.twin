@@ -1,21 +1,22 @@
 Module CommonModule
 
     [ Hidden ]
-    Public Function Stringify(Value As Variant, TextQualifier As String) As String
+    Public Function Stringify(Value As Variant, TextQualifier As String, ByVal UseNullAsEmpty As Boolean) As String
         Select Case VarType(Value)
             Case vbString: Return TextQualifier & Replace(Value, TextQualifier, TextQualifier & TextQualifier) & TextQualifier
-            Case vbNull, vbEmpty, vbError: Return vbNullString
+            Case vbNull: Return "null"
+            Case vbEmpty, vbError: Return IIf(UseNullAsEmpty, "null", vbNullString)
             Case vbDate: Return TextQualifier & VBA.Format$(ToUTC(CDate(Value)), "yyyy-mm-ddTHH:mm:ss.000Z") & TextQualifier
             Case Is >= vbArray, vbObject
                 Dim v As Variant, s As String
                 On Error Resume Next
                 If IsObject(Value) AndAlso TypeOf Value Is ListRange Then
                     For Each v In CListRange(Value)
-                        s = s & ", " & Stringify(v, TextQualifier)
+                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty)
                     Next v
                 Else
                     For Each v In Value
-                        s = s & ", " & Stringify(v, TextQualifier)
+                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty)
                     Next v
                 End If
                 On Error GoTo 0
