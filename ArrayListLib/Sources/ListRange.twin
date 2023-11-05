@@ -330,6 +330,10 @@ Public Class ListRange
         ReassignArrayTo ToArray, t
     End Function
     
+    Public Function ToString(Optional TextQualifier As String = "'") As String Implements ArrayList.ToString, IArrayList.ToString
+        Return LibMemoryEx.Stringify(Me, TextQualifier)
+    End Function
+    
     #Region "HIDDEN METHODS IN MSCORLIB"
     [ Hidden ]
     Public Function IndexOf_2(ByRef Value As Variant, ByVal Index As Long, ByVal GetCount As Long) As Long Implements ArrayList.IndexOf_2: Return IndexOf(Value, Index, GetCount): End Function

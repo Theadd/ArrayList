@@ -306,6 +306,10 @@ Public Class ArrayList
         ReassignArrayTo ToArray, t
     End Function
     
+    Public Function ToString(Optional TextQualifier As String = "'") As String Implements IArrayList.ToString
+        Return LibMemoryEx.Stringify(Me, TextQualifier)
+    End Function
+    
     Public Sub AddRange(Target As Variant) Implements IArrayList.AddRange
         InsertRange pIndex + pBaseIndex, Target
     End Sub
