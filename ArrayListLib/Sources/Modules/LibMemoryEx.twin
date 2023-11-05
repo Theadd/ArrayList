@@ -109,43 +109,5 @@ Public Module LibMemoryEx
             VBA.PutMem4 Target + (Target - Source), lbs1
         End If
     End Sub
-    
-    [ Hidden ]
-    Public Function Stringify(Value As Variant, TextQualifier As String) As String
-        Select Case VarType(Value)
-            Case vbString: Return TextQualifier & Replace(Value, TextQualifier, TextQualifier & TextQualifier) & TextQualifier
-            Case vbNull, vbEmpty, vbError: Return vbNullString
-            Case vbDate: Return TextQualifier & VBA.Format$(ToUTC(CDate(Value)), "yyyy-mm-ddTHH:mm:ss.000Z") & TextQualifier
-            Case Is >= vbArray, vbObject
-                Dim v As Variant, s As String
-                On Error Resume Next
-                If IsObject(Value) AndAlso TypeOf Value Is ListRange Then
-                    For Each v In CListRange(Value)
-                        s = s & ", " & Stringify(v, TextQualifier)
-                    Next v
-                Else
-                    For Each v In Value
-                        s = s & ", " & Stringify(v, TextQualifier)
-                    Next v
-                End If
-                On Error GoTo 0
-                Return "[" & VBA.Mid$(s, 3) & "]"
-            Case Else: Return LTrim(Str(Value))
-        End Select
-    End Function
-    
-    Private Function ToUTC(Value As Date) As Date
-    	Static tzOffset As Long = -1
-        If tzOffset = -1 Then
-            With CreateObject("htmlfile")
-                .write "<script>var tzo = (new Date()).getTimezoneOffset();</script>"
-                .Close
-                tzOffset = CLng(Val(.parentWindow.tzo))
-            End With
-        End If
-        Return DateAdd("n", tzOffset, Value)
-    End Function
-    
-    Private Function CListRange(Value As Variant) As ListRange: Set CListRange = Value: End Function
-    
+
 End Module

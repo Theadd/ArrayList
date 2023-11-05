@@ -332,7 +332,7 @@ Public Class ListRange
     End Function
     
     Public Function ToString(Optional TextQualifier As String = "'") As String Implements ArrayList.ToString, IArrayList.ToString
-        Return LibMemoryEx.Stringify(Me, TextQualifier)
+        Return CommonModule.Stringify(Me, TextQualifier)
     End Function
     
     #Region "HIDDEN METHODS IN MSCORLIB"
