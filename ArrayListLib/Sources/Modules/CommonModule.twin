@@ -1,7 +1,7 @@
 Module CommonModule
 
     [ Hidden ]
-    Public Function Stringify(Value As Variant, TextQualifier As String, ByVal UseNullAsEmpty As Boolean) As String
+    Public Function Stringify(Value As Variant, TextQualifier As String, ByVal UseNullAsEmpty As Boolean, ByVal UnquotedKeysAllowed As Boolean) As String
         Select Case VarType(Value)
             Case vbString: Return TextQualifier & Replace(Value, TextQualifier, TextQualifier & TextQualifier) & TextQualifier
             Case vbNull: Return "null"
@@ -12,11 +12,17 @@ Module CommonModule
                 On Error Resume Next
                 If IsObject(Value) AndAlso TypeOf Value Is ListRange Then
                     For Each v In CListRange(Value)
-                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty)
+                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty, UnquotedKeysAllowed)
                     Next v
+                ElseIf IsObject(Value) AndAlso InStr(TypeName(Value), "Dictionary", Compare:=VbCompareMethod.vbBinaryCompare) >= 0 Then
+                    For Each v In Value.Keys
+                        s = s & ", " & Stringify(If(UnquotedKeysAllowed, v, LTrim(Str(v))), TextQualifier, UseNullAsEmpty, UnquotedKeysAllowed) & ": " & Stringify(Value(v), TextQualifier, UseNullAsEmpty, UnquotedKeysAllowed)
+                    Next v
+                    On Error GoTo 0
+                    Return "{" & VBA.Mid$(s, 3) & "}"
                 Else
                     For Each v In Value
-                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty)
+                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty, UnquotedKeysAllowed)
                     Next v
                 End If
                 On Error GoTo 0
