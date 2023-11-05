@@ -256,6 +256,23 @@ Public Class ArrayList
         pVersion += 1
     End Sub
     
+    [ Description ("Removes a specified range of elements from the ArrayList, starting from a specified index.  " & vbCrLf & _
+    "### Parameters" & vbCrLf & _
+    "`Index` (Type: Long): The starting index of the range to be removed.  " & vbCrLf & _
+    "`GetCount` (Type: Long): The number of elements to be removed starting from the index.  " & vbCrLf & _
+    "### Usage Example" & vbCrLf & _
+    "```vb" & vbCrLf & _
+    "    ' Example Usage" & vbCrLf & _
+    "    Dim myArrayList As New ArrayList" & vbCrLf & _
+    "    ' (Assuming elements are present in the list)" & vbCrLf & _
+    "    myArrayList.RemoveRange 2, 3 ' Removes 3 elements starting from the 3rd index." & vbCrLf & _
+    "```" & vbCrLf & _
+    "### Notes" & vbCrLf & _
+    "- If the index is less than 0, if the count is less than 0, or if the count exceeds the available range to be removed, an error with code 9 is raised.  " & vbCrLf & _
+    "- The elements within the range to be removed are set to `Empty`.  " & vbCrLf & _
+    "- Following removal, the elements after the specified range are shifted to fill the removed space.  " & vbCrLf & _
+    "- Memory is zeroed for the elements at the end of the ArrayList after the removal.  " & vbCrLf & _
+    "- The internal version of the ArrayList is updated after removal.") ]
     Public Sub RemoveRange(ByVal Index As Long, ByVal GetCount As Long) Implements IArrayList.RemoveRange
         Dim i As Long
         Index = Index - pBaseIndex
