@@ -3,6 +3,7 @@
 [ COMCreatable (True) ]
 Public Class ArrayList
     Implements IArrayList
+    Implements ICloneable
     
     Private pItems() As Variant
     Private pIndex As Long
@@ -97,7 +98,7 @@ Public Class ArrayList
     End Sub
     
     [ Description ("Creates a shallow copy of this ArrayList.") ]
-    Public Function Clone() As Variant Implements IArrayList.Clone
+    Public Function Clone() As Variant Implements ICloneable.Clone
         Dim Target As ArrayList
         Set Target = New ArrayList(BaseIndex:=pBaseIndex)
         C2IArrayList(Target).CloneTo Target, C2IArrayList(Me), 0, pIndex

@@ -3,6 +3,7 @@
 [ COMCreatable (False) ]
 Public Class ListRange
     Implements IArrayList
+    Implements ICloneable
     Implements ArrayList
     
     Private pList As IArrayList
@@ -79,7 +80,7 @@ Public Class ListRange
         End If
     End Sub
     
-    Public Function Clone() As Variant Implements ArrayList.Clone, IArrayList.Clone
+    Public Function Clone() As Variant Implements ArrayList.Clone, ICloneable.Clone
         Dim Target As ArrayList
         Set Target = New ArrayList(BaseIndex:=pBaseIndex)
         C2IArrayList(Target).CloneTo Target, C2IArrayList(Me), 0, pIndex

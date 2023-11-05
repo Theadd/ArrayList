@@ -22,9 +22,6 @@ End Interface
 [ InterfaceId ("BC694131-C923-4813-9D34-C79C5E2F6980") ]
 [ Description ("Base interface for all lists.") ]
 Public Interface IList Extends ICollection
-    Implements ICloneable
-    
-    Function Clone() As Variant Implements ICloneable.Clone
     [ Description ("The Item property provides methods to read and edit entries in the List.") ]
     Property Get Item(ByVal Index As Long) As Variant
     Property Let Item(ByVal Index As Long, Value As Variant)
