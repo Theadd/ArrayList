@@ -32,7 +32,7 @@
 	"project.settingsVersion": 1,
 	"project.useProjectIdForTypeLibraryId": true,
 	"project.versionAutoIncrement": "Revision",
-	"project.versionBuild": 1,
+	"project.versionBuild": 2,
 	"project.versionLegalCopyright": "This is free and unencumbered software released into the public domain. For more information, please refer to <https://unlicense.org>",
 	"project.versionMajor": 1,
 	"project.versionMinor": 6,

@@ -53,7 +53,7 @@ Public Interface IListRange Extends IList
     Sub RemoveRange(ByVal Index As Long, ByVal GetCount As Long)
     Sub SetRange(ByVal Index As Long, Target As Variant)
     Function ToArray() As Variant()
-    Function ToString(TextQualifier As String, ByVal UseNullAsEmpty As Boolean) As String
+    Function ToString(Optional TextQualifier As String, Optional ByVal UseNullAsEmpty As Boolean, Optional ByVal UnquotedKeysAllowed As Boolean) As String
     [ Description ("Sorts the elements in a section of this list. The sort compares the elements to each other using the given IComparer interface.") ]
     Sub Sort(Optional ByVal Index As Variant, Optional ByVal GetCount As Variant, Optional ByRef Comparer As IComparer = Nothing)
     Function BinarySearch(ByVal Index As Long, ByVal GetCount As Long, ByRef Value As Variant, Optional ByRef Comparer As IComparer = Nothing) As Long
@@ -76,4 +76,16 @@ Public Interface IArrayList Extends IListRange
     Sub CloneTo(ByVal Target As IArrayList, ByRef Source As IArrayList, ByVal Index As Long, ByVal GetCount As Long)
     Function LastIndexOf(ByRef Value As Variant, Optional ByVal Index As Variant, Optional ByVal GetCount As Variant) As Long
     Sub Reverse(Optional ByVal Index As Variant, Optional ByVal GetCount As Variant)
+End Interface
+
+[ InterfaceId ("0E7AA3EE-2DFC-4BC7-8D38-CD2188C9D269") ]
+[ Description ("Base interface for any collection type that could be accessed or iterated as a single dimension array of elements. " & vbcrlf & "Unlike ArrayList, it's not limited to Variant() types.") ]
+Public Interface IArray Extends stdole.IDispatch
+    Property Get Count() As Long
+    [ Description ("Returns the N-based Index value, usually 0 or 1. Used to translate any provided Index value to the 0-based index equivalent.") ]
+    Property Get BaseIndex() As Long
+    [ Description ("Returns a shallow copy of all it's elements in a Variant variable.") ]
+    Function ToArray() As Variant
+    [ Description ("Returns the memory address pointing to the element at the specified Index. Index is always 0-based regardless of the BaseIndex value.") ]
+    Function AddressOf(Index As Long) As LongPtr
 End Interface

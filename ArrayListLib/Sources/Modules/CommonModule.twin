@@ -1,7 +1,7 @@
 Module CommonModule
 
     [ Hidden ]
-    Public Function Stringify(Value As Variant, TextQualifier As String, ByVal UseNullAsEmpty As Boolean) As String
+    Public Function Stringify(Value As Variant, TextQualifier As String, ByVal UseNullAsEmpty As Boolean, ByVal UnquotedKeysAllowed As Boolean) As String
         Select Case VarType(Value)
             Case vbString: Return TextQualifier & Replace(Value, TextQualifier, TextQualifier & TextQualifier) & TextQualifier
             Case vbNull: Return "null"
@@ -12,11 +12,17 @@ Module CommonModule
                 On Error Resume Next
                 If IsObject(Value) AndAlso TypeOf Value Is ListRange Then
                     For Each v In CListRange(Value)
-                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty)
+                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty, UnquotedKeysAllowed)
                     Next v
+                ElseIf IsObject(Value) AndAlso InStr(TypeName(Value), "Dictionary", Compare:=VbCompareMethod.vbBinaryCompare) > 0 Then
+                    For Each v In Value.Keys
+                        s = s & ", " & Stringify(If(UnquotedKeysAllowed, v, LTrim(Str(v))), TextQualifier, UseNullAsEmpty, UnquotedKeysAllowed) & ": " & Stringify(Value(v), TextQualifier, UseNullAsEmpty, UnquotedKeysAllowed)
+                    Next v
+                    On Error GoTo 0
+                    Return "{" & VBA.Mid$(s, 3) & "}"
                 Else
                     For Each v In Value
-                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty)
+                        s = s & ", " & Stringify(v, TextQualifier, UseNullAsEmpty, UnquotedKeysAllowed)
                     Next v
                 End If
                 On Error GoTo 0
@@ -37,6 +43,62 @@ Module CommonModule
         Return DateAdd("n", tzOffset, Value)
     End Function
     
-    Private Function CListRange(Value As Variant) As ListRange: Set CListRange = Value: End Function
+    Private Function CListRange(Value As Variant) As ListRange: Return Value: End Function
+    
+    Public Function C2IArrayList(Value As Variant) As IArrayList: Return Value: End Function
+    
+    Public Function C2IListRange(Value As Variant) As IListRange: Return Value: End Function
+    	
+    Public Function C2IArray(Value As Variant) As IArray: Return Value: End Function
+    
+    Public Sub ResetEnumerator(Target As IEnumerator): Target.Reset: End Sub
+    
+    #If Win64 Then
+        Const VARIANT_VT_ZERO_MASK As LongPtr = &HFFFFFFFFFFFF0000^
+    #Else
+        Const VARIANT_VT_ZERO_MASK As LongPtr = &HFFFF0000&
+    #End If
+    
+    Public Sub SafeArrayDescriptorAndVT(TargetArray As LongPtr, ByRef PTR As LongPtr, ByRef VT As Integer)
+        GetMemPtr TargetArray, PTR
+        If ((PTR And VARIANT_VT_ZERO_MASK) = 0) Then
+            VT = CInt(PTR And &HFF&)
+            Select Case (PTR And &HFF00&)
+                Case vbArray
+                    GetMemPtr TargetArray + 8, PTR
+                Case vbArray + VT_BYREF
+                    GetMemPtr TargetArray + 8, PTR
+                    GetMemPtr PTR, PTR
+                Case Else
+                    PTR = vbNullPtr
+                    Exit Sub
+            End Select
+        Else
+            GetMem2 PTR - 4, VT
+        End If
+        Select Case VT
+            Case 2 To 14, 17, 20, 36: Exit Sub
+        End Select
+        PTR = vbNullPtr
+    End Sub
+
+    Public Sub SizeOfVT(VT As Integer, ByRef ByteCount As Long)
+        Select Case VT
+            Case vbInteger: ByteCount = LenB(Of Integer)
+            Case vbLong: ByteCount = LenB(Of Long)
+            Case vbSingle: ByteCount = LenB(Of Single)
+            Case vbDouble: ByteCount = LenB(Of Double)
+            Case vbCurrency: ByteCount = LenB(Of Currency)
+            Case vbDate: ByteCount = LenB(Of Date)
+            Case vbString: ByteCount = LenB(Of String)
+            Case vbObject: ByteCount = LenB(Of Object)
+            Case vbBoolean: ByteCount = LenB(Of Boolean)
+            Case vbVariant: ByteCount = LenB(Of Variant)
+            Case vbDecimal: ByteCount = LenB(Of Decimal)
+            Case vbByte: ByteCount = LenB(Of Byte)
+            Case vbLongLong: ByteCount = LenB(Of LongLong)
+            Case vbLongLong: ByteCount = LenB(Of LongPtr)
+        End Select
+    End Sub
 
 End Module
