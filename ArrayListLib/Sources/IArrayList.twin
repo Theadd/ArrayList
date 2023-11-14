@@ -77,3 +77,15 @@ Public Interface IArrayList Extends IListRange
     Function LastIndexOf(ByRef Value As Variant, Optional ByVal Index As Variant, Optional ByVal GetCount As Variant) As Long
     Sub Reverse(Optional ByVal Index As Variant, Optional ByVal GetCount As Variant)
 End Interface
+
+[ InterfaceId ("0E7AA3EE-2DFC-4BC7-8D38-CD2188C9D269") ]
+[ Description ("Base interface for any collection type that could be accessed or iterated as a single dimension array of elements. " & vbcrlf & "Unlike ArrayList, it's not limited to Variant() types.") ]
+Public Interface IArray Extends stdole.IDispatch
+    Property Get Count() As Long
+    [ Description ("Returns the N-based Index value, usually 0 or 1. Used to translate any provided Index value to the 0-based index equivalent.") ]
+    Property Get BaseIndex() As Long
+    [ Description ("Returns a shallow copy of all it's elements in a Variant variable.") ]
+    Function ToArray() As Variant
+    [ Description ("Returns the memory address pointing to the element at the specified Index. Index is always 0-based regardless of the BaseIndex value.") ]
+    Function AddressOf(Index As Long) As LongPtr
+End Interface

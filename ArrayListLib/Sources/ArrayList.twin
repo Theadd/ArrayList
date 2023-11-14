@@ -4,6 +4,7 @@
 Public Class ArrayList
     Implements IArrayList
     Implements ICloneable
+    Implements IArray
     
     Private pItems() As Variant
     Private pIndex As Long
@@ -33,7 +34,7 @@ Public Class ArrayList
         pVersion += 1
     End Property
     
-    Public Property Get Count() As Long Implements IArrayList.Count: Return pIndex: End Property
+    Public Property Get Count() As Long Implements IArrayList.Count, IArray.Count: Return pIndex: End Property
     
     Public Property Let Count(ByVal Value As Long)
         If Value < 0 Then Err.Raise 9
@@ -42,7 +43,7 @@ Public Class ArrayList
         pVersion += 1
     End Property
     
-    Public Property Get BaseIndex() As Long Implements IArrayList.BaseIndex: Return pBaseIndex: End Property
+    Public Property Get BaseIndex() As Long Implements IArrayList.BaseIndex, IArray.BaseIndex: Return pBaseIndex: End Property
     
     Public Property Let BaseIndex(Value As Long) Implements IArrayList.BaseIndex: pBaseIndex = Value: pVersion += 1: End Property
     [ Hidden ]
@@ -169,9 +170,13 @@ Public Class ArrayList
                         ElseIf pVersion <> mVerB Then
                             mEnumeratorB.Bind pItems, Index, GetCount, GetStep
                             mVerB = pVersion
+                        Else
+                        	ResetEnumerator(mEnumeratorB)
                         End If
                         Set ThisEnumerator = mEnumeratorB
                         Return mEnumeratorB
+                    Else
+                        ResetEnumerator(mEnumerator)
                     End If
                 End If
             End If
@@ -298,13 +303,22 @@ Public Class ArrayList
         Next i
         pVersion += 1
     End Sub
-        
+    
+    [ Description ("Returns a shallow copy as a Variant() array. In those cases where you have to assign it to a Variant variable instead of a Variant() array. You can cast it to IArray before calling .ToArray() on it to prevent it from being assigned ByVal, which would cause the full array to be copied twice.") ]
     Public Function ToArray() As Variant() Implements IArrayList.ToArray
         Dim t() As Variant
         If pIndex = 0 Then Return Array()
         ReDim t(pBaseIndex To pIndex + pBaseIndex - 1)
         VariantArrayClone VarPtr(t(pBaseIndex)), VarPtr(pItems(0)), pIndex
         ReassignArrayTo ToArray, t
+    End Function
+    
+    Private Function IArray_ToArray() As Variant Implements IArray.ToArray
+        Dim t() As Variant
+        If pIndex = 0 Then Return Array()
+        ReDim t(pBaseIndex To pIndex + pBaseIndex - 1)
+        VariantArrayClone VarPtr(t(pBaseIndex)), VarPtr(pItems(0)), pIndex
+        ReassignArrayToVariant IArray_ToArray, t
     End Function
     
     Public Function ToString(Optional TextQualifier As String = """", Optional ByVal UseNullAsEmpty As Boolean = True, Optional ByVal UnquotedKeysAllowed As Boolean = False) As String Implements IArrayList.ToString
@@ -453,11 +467,7 @@ Public Class ArrayList
         On Error GoTo 0
     End Sub
     
-    Private Function C2IArrayList(Value As Variant) As IArrayList: Return Value: End Function
-    	
-    Private Function C2IListRange(Value As Variant) As IListRange: Return Value: End Function
-    
-    Friend Function GetAddressOfItemAt(Index As Long) As LongPtr Implements IArrayList.GetAddressOfItemAt: Return VarPtr(pItems(Index)): End Function
+    Friend Function GetAddressOfItemAt(Index As Long) As LongPtr Implements IArrayList.GetAddressOfItemAt, IArray.AddressOf: Return VarPtr(pItems(Index)): End Function
     
     #If Win64 Then
         Private Type UDTVariantB
@@ -506,12 +516,12 @@ Public Class ArrayList
     Private Sub ReserveSpaceForInsertOfOneAtZero()
     	Dim ub As Long = UBound(pItems), lb As Long = LBound(pItems)
         If lb < 0 Then
-            PutMem4 ArrPtr(pItems) + SAFEARRAY_LLBOUND_OFFSET, lb + 1
+            PutMem4 (Not Not pItems) + SAFEARRAY_OFFSETS.rgsaboundOffset + 4, lb + 1
         Else
             If pIndex + 30 > ub Then
                 ReDim Preserve pItems(-30& To (ub * 2) + 2)
             Else
-                PutMem4 ArrPtr(pItems) + SAFEARRAY_LLBOUND_OFFSET, -30&
+                PutMem4 (Not Not pItems) + SAFEARRAY_OFFSETS.rgsaboundOffset + 4, -30&
             End If
             lb = LBound(pItems)
             MemMoveEx VarPtr(pItems(1)), VarPtr(pItems(lb)), pIndex * VARIANT_SIZE

@@ -4,6 +4,7 @@
 Public Class ListRange
     Implements IArrayList
     Implements ICloneable
+    Implements IArray
     Implements ArrayList
     
     Private pList As IArrayList
@@ -39,7 +40,7 @@ Public Class ListRange
         Return Me
     End Function
     
-    Public Property Get BaseIndex() As Long Implements ArrayList.BaseIndex, IArrayList.BaseIndex: Return pBaseIndex: End Property
+    Public Property Get BaseIndex() As Long Implements ArrayList.BaseIndex, IArrayList.BaseIndex, IArray.BaseIndex: Return pBaseIndex: End Property
     
     Public Property Let BaseIndex(Value As Long) Implements ArrayList.BaseIndex, IArrayList.BaseIndex
         pBaseIndex = Value
@@ -130,14 +131,14 @@ Public Class ListRange
         End Select
     End Sub
     
-    Public Property Get Count() As Long Implements ArrayList.Count, IArrayList.Count
+    Public Property Get Count() As Long Implements ArrayList.Count, IArrayList.Count, IArray.Count
         InternalUpdateRange
         Return pIndex
     End Property
     
     Private Property Let Count(ByVal Value As Long)
         pIndex = Value
-        PutMem4 ArrPtr(pItems) + SAFEARRAY_CELEMENTS_OFFSET, Value
+        PutMem4 (Not Not pItems) + SAFEARRAY_OFFSETS.rgsaboundOffset, Value
     End Property
     
     Private Property Let ArrayList_Count(ByVal Value As Long) Implements ArrayList.Count: Err.Raise 17: End Property
@@ -163,9 +164,13 @@ Public Class ListRange
                         ElseIf pVersion <> mVerB Then
                             mEnumeratorB.Bind pItems, Index, GetCount, GetStep
                             mVerB = pVersion
+                        Else
+                            ResetEnumerator(mEnumeratorB)
                         End If
                         Set ThisEnumerator = mEnumeratorB
                         Return mEnumeratorB
+                    Else
+                        ResetEnumerator(mEnumerator)
                     End If
                 End If
             End If
@@ -331,6 +336,15 @@ Public Class ListRange
         ReassignArrayTo ToArray, t
     End Function
     
+    Private Function IArray_ToArray() As Variant Implements IArray.ToArray
+        InternalUpdateRange
+        Dim t() As Variant
+        If pIndex = 0 Then Return Array()
+        ReDim t(pBaseIndex To pIndex + pBaseIndex - 1)
+        VariantArrayClone VarPtr(t(pBaseIndex)), VarPtr(pItems(0)), pIndex
+        ReassignArrayToVariant IArray_ToArray, t
+    End Function
+    
     Public Function ToString(Optional TextQualifier As String = """", Optional ByVal UseNullAsEmpty As Boolean = True, Optional ByVal UnquotedKeysAllowed As Boolean = False) As String Implements ArrayList.ToString, IArrayList.ToString
         Return CommonModule.Stringify(Me, TextQualifier, UseNullAsEmpty, UnquotedKeysAllowed)
     End Function
@@ -359,7 +373,7 @@ Public Class ListRange
         On Error GoTo 0
     End Sub
     
-    Private Function GetAddressOfItemAt(Index As Long) As LongPtr Implements ArrayList.GetAddressOfItemAt, IArrayList.GetAddressOfItemAt
+    Private Function GetAddressOfItemAt(Index As Long) As LongPtr Implements ArrayList.GetAddressOfItemAt, IArrayList.GetAddressOfItemAt, IArray.AddressOf
         Return VarPtr(pItems(Index))
     End Function
     
@@ -375,9 +389,5 @@ Public Class ListRange
     Private Sub Assign(ByRef Target As Variant, ByRef Value As Variant)
         If IsObject(Value) Then Set Target = Value Else Target = Value
     End Sub
-    
-    Private Function C2IArrayList(Value As Variant) As IArrayList: Return Value: End Function
-    
-    Private Function C2IListRange(Value As Variant) As IListRange: Return Value: End Function
 
 End Class
